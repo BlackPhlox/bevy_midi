@@ -1,6 +1,7 @@
   
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_config_cam::ConfigCam;
+use bevy_midi::Midi;
 
 #[derive(Debug)]
 struct Key(String);
@@ -13,6 +14,7 @@ fn main() {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugin(ConfigCam)
+        .add_plugin(Midi)
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .add_startup_system(setup_octave.system())
