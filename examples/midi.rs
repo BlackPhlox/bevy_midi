@@ -10,16 +10,15 @@ fn main() {
     }
 }
 
-const key: [&str; 12] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const KEY_RANGE: [&str; 12] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
 fn translate(stamp: u64, message: &[u8]){
-    let a = message[1];
-    let off = (a - 36) % 12;
-    let md = (a - 36).overflowing_div(12).0;
+    let msg = message[1];
+    let off = msg % 12;
+    let oct = msg.overflowing_div(12).0;
 
-    let k = key.iter().nth(off.into()).unwrap();
-    let oct = md;
-    println!("{:?} {:?}", k, oct);
+    let k = KEY_RANGE.iter().nth(off.into()).unwrap();
+    println!("{}{:?}", k, oct);
     println!("{}: {:?} (len = {})", stamp, message, message.len());
 }
 
