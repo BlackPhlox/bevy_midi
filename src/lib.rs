@@ -1,6 +1,6 @@
-use std::{error::Error, io::{Write, stdin, stdout}, thread};
+use std::{error::{Error}, io::{Write, stdin, stdout}, thread};
 
-use bevy::prelude::{AppBuilder, Commands, EventWriter, IntoSystem, Plugin};
+use bevy::prelude::{AppBuilder, Commands, EventWriter, IntoSystem, Plugin, Res, ResMut};
 use midir::{Ignore, MidiInput};
 
 pub struct Midi;
@@ -46,13 +46,15 @@ fn osc_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>) {
             let in_port_name = midi_in.port_name(in_port).unwrap();
 
             // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _| {
+            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _ | {
                 //println!("{}: {:?} (len = {})", stamp, message, message.len());
                 translate(stamp, message);
+                
                 /*midi_events.send(MidiEvent {
                     stamp,
-                    message: message.to_vec(),
+                    message: Box::new(*message),
                 });*/
+                
             }, ()).unwrap();
 
             println!("Connection open, reading input from '{}' (press enter to exit) ...", in_port_name);
@@ -67,7 +69,7 @@ fn osc_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>) {
 
 pub struct MidiEvent {
     pub stamp: u64,
-    pub message: Vec<u8>,
+    pub message: Box<[u8]>,
 }
 
 const KEY_RANGE: [&str; 12] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
