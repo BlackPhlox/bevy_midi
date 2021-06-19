@@ -1,4 +1,4 @@
-use std::{error::{Error}, io::{Write, stdin, stdout}, thread};
+use std::{error::{Error}, io::{Write, stdin, stdout}, sync::{Arc, Mutex}, thread};
 
 use bevy::prelude::{AppBuilder, Commands, EventWriter, IntoSystem, Plugin, Res, ResMut};
 use midir::{Ignore, MidiInput};
@@ -7,12 +7,28 @@ pub struct Midi;
 impl Plugin for Midi {
     fn build(&self, app: &mut AppBuilder) {
         app
-        .add_startup_system(osc_setup.system())
-        .add_event::<MidiEvent>();
+        .init_resource::<MidiLog>()
+        .add_startup_system(midi_setup.system())
+        .add_event::<MidiEvent>()
+        .add_system(read_midi.system());
     }
 }
 
-fn osc_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>) {
+pub struct MidiLog {
+    data: Arc<Mutex<[u8]>>
+}
+
+impl Default for MidiLog {
+    fn default() -> Self {
+        Self {
+            data: Arc::new(Mutex::new([0]))
+        }
+    }
+}
+
+fn midi_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>, mut log: ResMut<MidiLog>) {
+    let thread_data = log.data.clone();
+
     thread::spawn(|| {
         {
             let mut input = String::new();
@@ -45,11 +61,15 @@ fn osc_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>) {
             println!("\nOpening connection");
             let in_port_name = midi_in.port_name(in_port).unwrap();
 
+            
+            
             // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
             let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _ | {
                 //println!("{}: {:?} (len = {})", stamp, message, message.len());
                 translate(stamp, message);
                 
+                let mut data = thread_data.lock().unwrap();
+                data[0] = message[0];
                 /*midi_events.send(MidiEvent {
                     stamp,
                     message: Box::new(*message),
@@ -65,6 +85,10 @@ fn osc_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>) {
             println!("Closing connection");
         }
     });
+}
+
+fn read_midi(mut log: ResMut<MidiLog>){
+    println!("{:?}", log.data);
 }
 
 pub struct MidiEvent {
