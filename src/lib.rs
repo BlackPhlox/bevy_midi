@@ -1,49 +1,79 @@
-use std::{error::{Error}, io::{Write, stdin, stdout}, sync::{Arc, Mutex}, thread};
+use std::{
+    io::{stdin, stdout, Write},
+    sync::{Arc, Mutex, MutexGuard},
+    thread,
+};
 
-use bevy::prelude::{AppBuilder, Commands, EventWriter, IntoSystem, Plugin, Res, ResMut};
+use bevy::prelude::{AppBuilder, EventReader, EventWriter, IntoSystem, Plugin, Res, ResMut};
 use midir::{Ignore, MidiInput};
 
 pub struct Midi;
 impl Plugin for Midi {
     fn build(&self, app: &mut AppBuilder) {
-        app
-        .init_resource::<MidiLog>()
-        .add_startup_system(midi_setup.system())
-        .add_event::<MidiEvent>()
-        .add_system(read_midi.system());
+        app.init_resource::<MidiSettings>()
+            .init_resource::<MidiLog>()
+            .insert_resource(MidiStamp { stamp: 0 as u64 })
+            .add_startup_system(midi_setup.system())
+            .add_system(midi_sender.system())
+            .add_system(midi_listener.system())
+            .add_event::<MidiEvent>();
+    }
+}
+
+pub struct MidiSettings {
+    pub is_debug: bool,
+}
+
+impl Default for MidiSettings {
+    fn default() -> Self {
+        Self { is_debug: true }
     }
 }
 
 pub struct MidiLog {
-    data: Arc<Mutex<[u8]>>
+    stamp: Arc<Mutex<[u64]>>,
+    message: Arc<Mutex<[u8]>>,
+}
+
+impl MidiLog {
+    pub fn get(&mut self) -> (MutexGuard<[u64]>, MutexGuard<[u8]>) {
+        let stmp = self.stamp.lock().unwrap();
+        let msg = self.message.lock().unwrap();
+        (stmp, msg)
+    }
 }
 
 impl Default for MidiLog {
     fn default() -> Self {
         Self {
-            data: Arc::new(Mutex::new([0]))
+            stamp: Arc::new(Mutex::new([0 as u64])),
+            message: Arc::new(Mutex::new([0, 0, 0])),
         }
     }
 }
 
-fn midi_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>, mut log: ResMut<MidiLog>) {
-    let thread_data = log.data.clone();
+fn midi_setup(log: Res<MidiLog>) {
+    let thread_stamp = log.stamp.clone();
+    let thread_msg = log.message.clone();
 
-    thread::spawn(|| {
+    let _t = thread::Builder::new().name("Midi Input".into()).spawn(|| {
         {
             let mut input = String::new();
-    
-            let mut midi_in : MidiInput = MidiInput::new("midir reading input").unwrap();
+
+            let mut midi_in: MidiInput = MidiInput::new("midir reading input").unwrap();
             midi_in.ignore(Ignore::None);
-            
+
             // Get an input port (read from console if multiple are available)
             let in_ports = midi_in.ports();
             let in_port = match in_ports.len() {
                 //0 => return Err("no input port found".into()),
                 1 => {
-                    println!("Choosing the only available input port: {}", midi_in.port_name(&in_ports[0]).unwrap());
+                    println!(
+                        "Choosing the only available input port: {}",
+                        midi_in.port_name(&in_ports[0]).unwrap()
+                    );
                     &in_ports[0]
-                },
+                }
                 _ => {
                     println!("\nAvailable input ports:");
                     for (i, p) in in_ports.iter().enumerate() {
@@ -53,31 +83,52 @@ fn midi_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>, m
                     stdout().flush().unwrap();
                     let mut input = String::new();
                     stdin().read_line(&mut input).unwrap();
-                    in_ports.get(input.trim().parse::<usize>().unwrap())
-                            .ok_or("invalid input port selected").unwrap()
+                    in_ports
+                        .get(input.trim().parse::<usize>().unwrap())
+                        .ok_or("invalid input port selected")
+                        .unwrap()
                 }
             };
-            
+
             println!("\nOpening connection");
             let in_port_name = midi_in.port_name(in_port).unwrap();
 
-            
-            
             // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _ | {
-                //println!("{}: {:?} (len = {})", stamp, message, message.len());
-                translate(stamp, message);
-                
-                let mut data = thread_data.lock().unwrap();
-                data[0] = message[0];
-                /*midi_events.send(MidiEvent {
-                    stamp,
-                    message: Box::new(*message),
-                });*/
-                
-            }, ()).unwrap();
+            let _conn_in = midi_in
+                .connect(
+                    in_port,
+                    "midir-read-input",
+                    move |stamp, message, _| {
+                        //println!("{}: {:?} (len = {})", stamp, message, message.len());
 
-            println!("Connection open, reading input from '{}' (press enter to exit) ...", in_port_name);
+                        //translate(stamp, message);
+
+                        let mut data = thread_msg.lock().unwrap();
+
+                        let mut stmp = thread_stamp.lock().unwrap();
+
+                        let mut i = 0;
+
+                        if message.len() != 3 {
+                            //throw error
+                        }
+
+                        for m in message {
+                            //println!("{}",*m);
+                            data[i] = *m;
+                            i += 1;
+                        }
+
+                        stmp[0] = stamp;
+                    },
+                    (),
+                )
+                .unwrap();
+
+            println!(
+                "Connection open, reading input from '{}' (press enter to exit) ...",
+                in_port_name
+            );
 
             input.clear();
             stdin().read_line(&mut input).unwrap(); // wait for next enter key press
@@ -87,34 +138,76 @@ fn midi_setup(mut commands: Commands, mut midi_events: EventWriter<MidiEvent>, m
     });
 }
 
-fn read_midi(mut log: ResMut<MidiLog>){
-    println!("{:?}", log.data);
+struct MidiStamp {
+    stamp: u64,
 }
 
 pub struct MidiEvent {
-    pub stamp: u64,
-    pub message: Box<[u8]>,
+    pub message: [u8; 3],
 }
 
-const KEY_RANGE: [&str; 12] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+fn midi_sender(
+    mut log: ResMut<MidiLog>,
+    mut rs_log: ResMut<MidiStamp>,
+    mut midi_events: EventWriter<MidiEvent>,
+) {
+    let (stamps, msg) = log.get();
+    let stamp = stamps[0];
 
-fn translate(stamp: u64, message: &[u8]){
+    if !stamp.eq(&rs_log.stamp) {
+        midi_events.send(MidiEvent {
+            message: [msg[0], msg[1], msg[2]],
+        });
+
+        rs_log.stamp = stamp;
+    }
+}
+
+fn midi_listener(mut events: EventReader<MidiEvent>, settings: Res<MidiSettings>) {
+    if settings.is_debug {
+        for midi_event in events.iter() {
+            translate(&midi_event.message);
+        }
+    }
+}
+
+const KEY_RANGE: [&str; 12] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+];
+
+pub fn translate(message: &[u8]) -> (u8, String) {
     let msg = message[1];
     let off = msg % 12;
     let oct = msg.overflowing_div(12).0;
 
+    let midi_type = if message[0].eq(&144) {
+        "Press"
+    } else if message[0].eq(&128) {
+        "Release"
+    } else {
+        "Other"
+    };
+
     let k = KEY_RANGE.iter().nth(off.into()).unwrap();
-    println!("{}{:?}", k, oct);
-    println!("{}: {:?} (len = {})", stamp, message, message.len());
+    println!(
+        "{}:{}{:?} - Raw: {}",
+        midi_type,
+        k,
+        oct,
+        format!("{:?} (len = {})", message, message.len())
+    );
+    (message[0], format!("{}{:?}", k, oct))
 }
 
 /*
+TODO: Re-implement error handling/aggregation
+
 fn run() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
-    
+
     let mut midi_in = MidiInput::new("midir reading input")?;
     midi_in.ignore(Ignore::None);
-    
+
     // Get an input port (read from console if multiple are available)
     let in_ports = midi_in.ports();
     let in_port = match in_ports.len() {
@@ -136,21 +229,21 @@ fn run() -> Result<(), Box<dyn Error>> {
             .ok_or("invalid input port selected")?
         }
     };
-    
+
     println!("\nOpening connection");
     let in_port_name = midi_in.port_name(in_port)?;
-    
+
     // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
     let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _| {
         //println!("{}: {:?} (len = {})", stamp, message, message.len());
         translate(stamp, message);
     }, ())?;
-    
+
     println!("Connection open, reading input from '{}' (press enter to exit) ...", in_port_name);
-    
+
     input.clear();
     stdin().read_line(&mut input)?; // wait for next enter key press
-    
+
     println!("Closing connection");
     Ok(())
 }

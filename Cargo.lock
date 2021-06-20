@@ -1114,9 +1114,9 @@ dependencies = [
 
 [[package]]
 name = "erased-serde"
-version = "0.3.15"
+version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5b36e6f2295f393f44894c6031f67df4d185b984cd54d08f768ce678007efcd"
+checksum = "3de9ad4541d99dc22b59134e7ff8dc3d6c988c89ecd7324bf10a8362b07a2afa"
 dependencies = [
  "serde",
 ]
