@@ -181,9 +181,9 @@ pub fn translate(message: &[u8]) -> (u8, String) {
     let oct = msg.overflowing_div(12).0;
 
     let midi_type = if message[0].eq(&144) {
-        "Press"
+        "NoteOn"
     } else if message[0].eq(&128) {
-        "Release"
+        "NoteOff"
     } else {
         "Other"
     };
