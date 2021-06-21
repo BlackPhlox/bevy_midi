@@ -1,6 +1,6 @@
 # bevy_midi
 
-bevy plugin using [midir](https://github.com/Boddlnagg/midir)
+A bevy plugin using [midir](https://github.com/Boddlnagg/midir). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
 
 [![crates.io](https://img.shields.io/crates/v/bevy_midi)](https://crates.io/crates/bevy_midi)</br>[![docs.rs](https://docs.rs/bevy_midi/badge.svg)](https://docs.rs/bevy_midi)
 
@@ -8,10 +8,9 @@ bevy plugin using [midir](https://github.com/Boddlnagg/midir)
 
 Run the examples using:</br>
 
-`cargo run --release --example simple`
-
-or
-
+`cargo run --release --example minimal`
+,</br>
+`cargo run --release --example simple` or</br>
 `cargo run --release --example piano`
 
 # Setup
