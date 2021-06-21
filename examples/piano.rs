@@ -18,8 +18,7 @@ fn main() {
         .add_startup_system(setup.system())
         .add_startup_system(setup_octave.system())
         .add_system(rotator_system.system())
-        .add_system(key_system.system())
-        .add_system(midi_2_listener.system())
+        .add_system(midi_listener.system())
         .add_system(key_bow_system.system())
         .run();
 }
@@ -203,11 +202,7 @@ fn setup_octave(mut commands: Commands, asset_server: Res<AssetServer>) {
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.7, 0.7, 1.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
-        ..Default::default()
-    });
+fn setup(mut commands: Commands) {
     commands
         .spawn_bundle(LightBundle {
             transform: Transform::from_xyz(3.0, 5.0, 3.0),
@@ -227,41 +222,7 @@ fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<Rotates
     }
 }
 
-fn key_system(
-    time: Res<Time>,
-    keys: Res<Input<KeyCode>>,
-    mut query: Query<(&Key, &mut Transform)>,
-) {
-    if keys.just_released(KeyCode::F) {
-        for (key, mut transform) in query.iter_mut() {
-            if key.0 == "C4" {
-                transform.translation =
-                    Vec3::new(transform.translation.x, 0.0, transform.translation.z);
-            }
-        }
-    }
-    for key in keys.get_pressed() {
-        if key == &KeyCode::F {
-            for (key, mut transform) in query.iter_mut() {
-                if key.0 == "C4" {
-                    if transform.translation.y > -0.1 {
-                        transform.translation = Vec3::new(
-                            transform.translation.x,
-                            transform.translation.y - 0.1,
-                            transform.translation.z,
-                        );
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn key_bow_system(
-    time: Res<Time>,
-    keys: Res<Input<KeyCode>>,
-    mut query: Query<&mut Transform, With<Key>>,
-) {
+fn key_bow_system(time: Res<Time>, mut query: Query<&mut Transform, With<Key>>) {
     let mut i = 0;
 
     for mut transform in query.iter_mut() {
@@ -274,16 +235,17 @@ fn key_bow_system(
     }
 }
 
-fn midi_2_listener(mut events: EventReader<MidiEvent>, mut query: Query<(&Key, &mut Transform)>) {
+fn midi_listener(mut events: EventReader<MidiEvent>, mut query: Query<(&Key, &mut Transform)>) {
     let mut key_str = "".to_string();
-    let mut u: u8 = 0;
+    let mut midi_type: u8 = 0;
     for midi_event in events.iter() {
         let a = translate(&midi_event.message);
-        u = a.0;
+        midi_type = a.0;
         key_str = a.1;
     }
 
-    if u.eq(&144) {
+    //NoteOne
+    if midi_type.eq(&144) {
         for (key, mut transform) in query.iter_mut() {
             if key.0 == key_str {
                 if transform.translation.y > -0.1 {
@@ -295,7 +257,8 @@ fn midi_2_listener(mut events: EventReader<MidiEvent>, mut query: Query<(&Key, &
                 }
             }
         }
-    } else if u.eq(&128) {
+    //NoteOff
+    } else if midi_type.eq(&128) {
         for (key, mut transform) in query.iter_mut() {
             if key.0 == key_str {
                 transform.translation =

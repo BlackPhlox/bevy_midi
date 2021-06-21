@@ -12,7 +12,7 @@ impl Plugin for Midi {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<MidiSettings>()
             .init_resource::<MidiLog>()
-            .insert_resource(MidiStamp { stamp: 0 as u64 })
+            .insert_resource(MidiStamp { stamp: 0_u64 })
             .add_startup_system(midi_setup.system())
             .add_system(midi_sender.system())
             .add_system(midi_listener.system())
@@ -46,7 +46,7 @@ impl MidiLog {
 impl Default for MidiLog {
     fn default() -> Self {
         Self {
-            stamp: Arc::new(Mutex::new([0 as u64])),
+            stamp: Arc::new(Mutex::new([0_u64])),
             message: Arc::new(Mutex::new([0, 0, 0])),
         }
     }
@@ -101,22 +101,17 @@ fn midi_setup(log: Res<MidiLog>) {
                     move |stamp, message, _| {
                         //println!("{}: {:?} (len = {})", stamp, message, message.len());
 
-                        //translate(stamp, message);
-
                         let mut data = thread_msg.lock().unwrap();
 
                         let mut stmp = thread_stamp.lock().unwrap();
-
-                        let mut i = 0;
 
                         if message.len() != 3 {
                             //throw error
                         }
 
-                        for m in message {
+                        for (i, m) in message.iter().enumerate() {
                             //println!("{}",*m);
                             data[i] = *m;
-                            i += 1;
                         }
 
                         stmp[0] = stamp;
