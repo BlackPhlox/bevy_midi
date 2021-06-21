@@ -244,7 +244,7 @@ fn midi_listener(mut events: EventReader<MidiEvent>, mut query: Query<(&Key, &mu
         key_str = a.1;
     }
 
-    //NoteOne
+    //NoteOn
     if midi_type.eq(&144) {
         for (key, mut transform) in query.iter_mut() {
             if key.0 == key_str {
