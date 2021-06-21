@@ -2,6 +2,8 @@
 
 bevy plugin using [midir](https://github.com/Boddlnagg/midir)
 
+[![crates.io](https://img.shields.io/crates/v/bevy_midi)](https://crates.io/crates/bevy_midi)</br>[![docs.rs](https://docs.rs/bevy_midi/badge.svg)](https://docs.rs/bevy_midi)
+
 ## Showcase
 
 Run the examples using:</br>
@@ -11,3 +13,20 @@ Run the examples using:</br>
 or
 
 `cargo run --release --example piano`
+
+# Setup
+
+Todo
+
+# Support
+[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
+
+|bevy|bevy_osc|
+|---|---|
+|0.5|0.1.X|
+
+# Licensing
+The project is under dual license MIT and ISC (functionally equivalent, though ISC removing some language that is no longer necessary), so yoink to your hearts content, just remember the license agreements.
+
+# Contributing
+Yes this project is still very much WIP, so PRs are very welcome
