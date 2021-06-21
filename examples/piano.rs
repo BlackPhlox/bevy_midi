@@ -16,14 +16,14 @@ fn main() {
         .add_plugin(Midi)
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
-        .add_startup_system(setup_octave.system())
+        .add_startup_system(setup_piano.system())
         .add_system(rotator_system.system())
         .add_system(midi_listener.system())
         .add_system(key_bow_system.system())
         .run();
 }
 
-fn setup_octave(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_piano(mut commands: Commands, asset_server: Res<AssetServer>) {
     let pos: Vec3 = Vec3::new(0., 0., 0.);
 
     let black_key: Handle<Scene> = asset_server.load("models/black_key.gltf#Scene0");
@@ -31,6 +31,7 @@ fn setup_octave(mut commands: Commands, asset_server: Res<AssetServer>) {
     let white_key_1: Handle<Scene> = asset_server.load("models/white_key_1.gltf#Scene0");
     let white_key_2: Handle<Scene> = asset_server.load("models/white_key_2.gltf#Scene0");
 
+    //Building the keyboard of every octave section
     for i in 0..8 {
         commands
             .spawn_bundle((

@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-use bevy::prelude::{AppBuilder, EventReader, EventWriter, IntoSystem, Plugin, Res, ResMut};
+use bevy::{ecs::schedule::ShouldRun, prelude::{AppBuilder, EventReader, EventWriter, IntoSystem, Plugin, Res, ResMut, SystemSet}};
 use midir::{Ignore, MidiInput};
 
 pub struct Midi;
@@ -12,11 +12,16 @@ impl Plugin for Midi {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<MidiSettings>()
             .init_resource::<MidiLog>()
+            .add_event::<MidiEvent>()
             .insert_resource(MidiStamp { stamp: 0_u64 })
             .add_startup_system(midi_setup.system())
             .add_system(midi_sender.system())
-            .add_system(midi_listener.system())
-            .add_event::<MidiEvent>();
+            .add_system_set(
+                SystemSet::new()
+                    .with_run_criteria(run_if_debug.system())
+                    .before("input")
+                    .with_system(midi_listener.system())
+            );
     }
 }
 
@@ -99,18 +104,11 @@ fn midi_setup(log: Res<MidiLog>) {
                     in_port,
                     "midir-read-input",
                     move |stamp, message, _| {
-                        //println!("{}: {:?} (len = {})", stamp, message, message.len());
 
                         let mut data = thread_msg.lock().unwrap();
-
                         let mut stmp = thread_stamp.lock().unwrap();
 
-                        if message.len() != 3 {
-                            //throw error
-                        }
-
                         for (i, m) in message.iter().enumerate() {
-                            //println!("{}",*m);
                             data[i] = *m;
                         }
 
@@ -158,11 +156,20 @@ fn midi_sender(
     }
 }
 
-fn midi_listener(mut events: EventReader<MidiEvent>, settings: Res<MidiSettings>) {
+fn run_if_debug(
+    settings: Res<MidiSettings>
+) -> ShouldRun
+{
     if settings.is_debug {
-        for midi_event in events.iter() {
-            translate(&midi_event.message);
-        }
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}
+
+fn midi_listener(mut events: EventReader<MidiEvent>) {
+    for midi_event in events.iter() {
+        translate(&midi_event.message);
     }
 }
 
