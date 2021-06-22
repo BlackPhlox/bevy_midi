@@ -1,7 +1,6 @@
-
-
-
-# bevy_midi
+<div align="left">
+<a href="https://github.com/BlackPhlox/bevy_osc"><img src="https://raw.githubusercontent.com/BlackPhlox/BlackPhlox/master/bevy_midi.svg" alt="bevy_midi"></a>
+</div>
 
 A bevy plugin using [midir](https://github.com/Boddlnagg/midir). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
 
