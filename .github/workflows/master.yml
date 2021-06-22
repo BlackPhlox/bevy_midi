@@ -23,6 +23,14 @@ jobs:
     needs: update
     steps:
       - uses: actions/checkout@v2
+      - name: Update apt
+        run: sudo apt update
+      - name: Install pkg-config
+        run: sudo apt install pkg-config
+      - name: Install alsa dev tools
+        run: sudo apt-get install libasound2-dev
+      - name: Install libudev
+        run: sudo apt install libudev-dev
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -30,7 +38,7 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: check       
 
   test:
     name: Test Suite
@@ -38,6 +46,14 @@ jobs:
     needs: update
     steps:
       - uses: actions/checkout@v2
+      - name: Update apt
+        run: sudo apt update
+      - name: Install pkg-config
+        run: sudo apt install pkg-config
+      - name: Install alsa dev tools
+        run: sudo apt-get install libasound2-dev
+      - name: Install libudev
+        run: sudo apt install libudev-dev
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -69,6 +85,14 @@ jobs:
     needs: update
     steps:
       - uses: actions/checkout@v2
+      - name: Update apt
+        run: sudo apt update
+      - name: Install pkg-config
+        run: sudo apt install pkg-config
+      - name: Install alsa dev tools
+        run: sudo apt-get install libasound2-dev
+      - name: Install libudev
+        run: sudo apt install libudev-dev
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
