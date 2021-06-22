@@ -1,3 +1,6 @@
+
+
+
 # bevy_midi
 
 A bevy plugin using [midir](https://github.com/Boddlnagg/midir). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
@@ -12,6 +15,12 @@ Run the examples using:</br>
 ,</br>
 `cargo run --release --example simple` or</br>
 `cargo run --release --example piano`
+
+Running the piano example:</br>
+
+https://user-images.githubusercontent.com/25123512/122971334-3bae6100-d38f-11eb-9605-4c314b088ff2.mp4
+
+Notice: Sustain is not handled by the example
 
 # Setup
 
