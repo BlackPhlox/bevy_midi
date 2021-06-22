@@ -19,7 +19,7 @@ fn main() {
         .add_startup_system(setup_piano.system())
         .add_system(rotator_system.system())
         .add_system(midi_listener.system())
-        .add_system(key_bow_system.system())
+        //.add_system(key_bow_system.system())
         .run();
 }
 
