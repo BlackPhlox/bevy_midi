@@ -1,12 +1,11 @@
-
 use bevy::prelude::*;
-use bevy_midi::{Midi, MidiEvent, MidiSettings, translate};
+use bevy_midi::{translate, Midi, MidiEvent, MidiSettings};
 
 fn main() {
     App::build()
         .add_plugins(MinimalPlugins)
         .add_plugin(Midi)
-        .insert_resource(MidiSettings{is_debug: false})
+        .insert_resource(MidiSettings { is_debug: false })
         .add_system(midi_listener.system())
         .run();
 }

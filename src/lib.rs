@@ -4,7 +4,10 @@ use std::{
     thread,
 };
 
-use bevy::{ecs::schedule::ShouldRun, prelude::{AppBuilder, EventReader, EventWriter, IntoSystem, Plugin, Res, ResMut, SystemSet}};
+use bevy::{
+    ecs::schedule::ShouldRun,
+    prelude::{AppBuilder, EventReader, EventWriter, IntoSystem, Plugin, Res, ResMut, SystemSet},
+};
 use midir::{Ignore, MidiInput};
 
 pub struct Midi;
@@ -20,7 +23,7 @@ impl Plugin for Midi {
                 SystemSet::new()
                     .with_run_criteria(run_if_debug.system())
                     .before("input")
-                    .with_system(midi_listener.system())
+                    .with_system(midi_listener.system()),
             );
     }
 }
@@ -104,7 +107,6 @@ fn midi_setup(log: Res<MidiLog>) {
                     in_port,
                     "midir-read-input",
                     move |stamp, message, _| {
-
                         let mut data = thread_msg.lock().unwrap();
                         let mut stmp = thread_stamp.lock().unwrap();
 
@@ -156,10 +158,7 @@ fn midi_sender(
     }
 }
 
-fn run_if_debug(
-    settings: Res<MidiSettings>
-) -> ShouldRun
-{
+fn run_if_debug(settings: Res<MidiSettings>) -> ShouldRun {
     if settings.is_debug {
         ShouldRun::Yes
     } else {
