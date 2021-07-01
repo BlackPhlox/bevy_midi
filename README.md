@@ -2,9 +2,19 @@
 <a href="https://github.com/BlackPhlox/bevy_midi"><img src="https://raw.githubusercontent.com/BlackPhlox/BlackPhlox/master/bevy_midi.svg" alt="bevy_midi"></a>
 </div>
 
-A bevy plugin using [midir](https://github.com/Boddlnagg/midir). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
 
-[![crates.io](https://img.shields.io/crates/v/bevy_midi)](https://crates.io/crates/bevy_midi)</br>[![docs.rs](https://docs.rs/bevy_midi/badge.svg)](https://docs.rs/bevy_midi)
+<div align="left">
+<a href="https://crates.io/crates/bevy_midi"><img src="https://img.shields.io/crates/v/bevy_midi" alt="link to crates.io"></a>
+<a href="https://docs.rs/bevy_midi"><img src="https://docs.rs/bevy_midi/badge.svg" alt="link to docs.rs"></a>
+<a href="https://github.com/BlackPhlox/bevy_midi/blob/master/credits/CREDITS.md"><img src="https://img.shields.io/crates/l/bevy_midi" alt="link to license"></a>
+<a href="https://crates.io/crates/bevy_midi"><img src="https://img.shields.io/crates/d/bevy_midi" alt="downloads/link to crates.io"></a>   
+<a href="https://github.com/BlackPhlox/bevy_midi"><img src="https://img.shields.io/github/stars/BlackPhlox/bevy_midi" alt="stars/github repo"></a>
+<a href="https://github.com/BlackPhlox/bevy_midi/actions/workflows/master.yml"><img src="https://github.com/BlackPhlox/bevy_midi/actions/workflows/master.yml/badge.svg" alt="github actions"></a>
+<a href="https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking"><img src="https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue" alt="tracking bevy release branch"></a>
+</div>
+</br>
+
+A bevy plugin using [midir](https://github.com/Boddlnagg/midir). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
 
 ## Showcase
 
