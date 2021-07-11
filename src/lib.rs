@@ -28,13 +28,20 @@ impl Plugin for Midi {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct MidiSettings {
     pub is_debug: bool,
+    pub note_on: u8,
+    pub note_off: u8,
 }
 
 impl Default for MidiSettings {
     fn default() -> Self {
-        Self { is_debug: true }
+        Self { 
+            is_debug: true,
+            note_on: 144,
+            note_off: 128, 
+        }
     }
 }
 
@@ -166,9 +173,9 @@ fn run_if_debug(settings: Res<MidiSettings>) -> ShouldRun {
     }
 }
 
-fn midi_listener(mut events: EventReader<MidiEvent>) {
+fn midi_listener(mut events: EventReader<MidiEvent>, settings: Res<MidiSettings>) {
     for midi_event in events.iter() {
-        translate(&midi_event.message);
+        translate(&midi_event.message, *settings);
     }
 }
 
@@ -176,14 +183,14 @@ const KEY_RANGE: [&str; 12] = [
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
 ];
 
-pub fn translate(message: &[u8]) -> (u8, String) {
+pub fn translate(message: &[u8], settings: MidiSettings) -> (u8, String) {
     let msg = message[1];
     let off = msg % 12;
     let oct = msg.overflowing_div(12).0;
 
-    let midi_type = if message[0].eq(&144) {
+    let midi_type = if message[0].eq(&settings.note_on) {
         "NoteOn"
-    } else if message[0].eq(&128) {
+    } else if message[0].eq(&settings.note_off) {
         "NoteOff"
     } else {
         "Other"

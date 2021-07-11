@@ -14,6 +14,11 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .add_plugin(ConfigCam)
         .add_plugin(Midi)
+        .insert_resource(MidiSettings { 
+            note_on: 156,
+            note_off: 140,
+            ..Default::default() 
+        })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .add_startup_system(setup_piano.system())
@@ -240,7 +245,7 @@ fn midi_listener(mut events: EventReader<MidiEvent>, mut query: Query<(&Key, &mu
     let mut key_str = "".to_string();
     let mut midi_type: u8 = 0;
     for midi_event in events.iter() {
-        let a = translate(&midi_event.message, &settings);
+        let a = translate(&midi_event.message, *settings);
         midi_type = a.0;
         key_str = a.1;
     }
