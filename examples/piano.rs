@@ -1,6 +1,6 @@
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_config_cam::ConfigCam;
-use bevy_midi::{KEY_RANGE, Midi, MidiRawData, MidiSettings};
+use bevy_midi::{Midi, MidiRawData, MidiSettings, KEY_RANGE};
 use crossbeam_channel::Receiver;
 
 fn main() {
@@ -22,7 +22,7 @@ fn main() {
 }
 
 #[derive(Debug)]
-struct Key{
+struct Key {
     key_val: String,
     y_reset: f32,
 }
@@ -70,7 +70,10 @@ fn spawn_note(
             },
             GlobalTransform::identity(),
         ))
-        .insert(Key{ key_val: format!("{}{}", key, oct), y_reset: pos.y})
+        .insert(Key {
+            key_val: format!("{}{}", key, oct),
+            y_reset: pos.y,
+        })
         .with_children(|cell| {
             cell.spawn_scene(asset.clone());
         });
@@ -89,7 +92,7 @@ fn handle_midi_input(
 
         if event.eq(&settings.note_on) {
             for (key, mut transform) in query.iter_mut() {
-                if key.key_val.eq(&format!("{}{}",key_str,oct).to_string()) {
+                if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
                     if transform.translation.y > -0.1 {
                         transform.translation = Vec3::new(
                             transform.translation.x,
@@ -99,15 +102,17 @@ fn handle_midi_input(
                     }
                 }
             }
-        } else if event.eq(&settings.note_off){
+        } else if event.eq(&settings.note_off) {
             for (key, mut transform) in query.iter_mut() {
-                if key.key_val.eq(&format!("{}{}",key_str,oct).to_string()) {
-                    transform.translation =
-                        Vec3::new(transform.translation.x, key.y_reset, transform.translation.z);
+                if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
+                    transform.translation = Vec3::new(
+                        transform.translation.x,
+                        key.y_reset,
+                        transform.translation.z,
+                    );
                 }
             }
         } else {
-
         }
     }
 }

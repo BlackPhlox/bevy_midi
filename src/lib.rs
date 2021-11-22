@@ -89,7 +89,7 @@ async fn handshake(sender: Sender<MidiRawData>) {
     println!("\nOpening connection");
     let in_port_name = midi_in.port_name(in_port).unwrap();
 
-    let sender = sender.clone();
+    let sender = sender;
 
     // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
     let _conn_in = midi_in
@@ -145,11 +145,12 @@ pub fn translate(message: &[u8], settings: MidiSettings) -> (u8, String) {
 
     let k = KEY_RANGE.iter().nth(off.into()).unwrap();
     println!(
-        "{}:{}{:?} - Raw: {}",
+        "{}:{}{:?} - Raw: {:?} (len = {})",
         midi_type,
         k,
         oct,
-        format!("{:?} (len = {})", message, message.len())
+        message,
+        message.len()
     );
     (message[0], format!("{}{:?}", k, oct))
 }
