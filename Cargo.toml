@@ -1,9 +1,9 @@
 [package]
 name = "bevy_midi"
-version = "0.1.0"
-authors = ["BlackPhlox <theluja@gmail.com>"]
-edition = "2018"
-license = "MIT OR ISC"
+version = "0.2.0"
+authors = ["Black Phlox <bphlox@gmail.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/BlackPhlox/bevy_midi"
 documentation = "https://docs.rs/bevy_midi"
@@ -22,13 +22,14 @@ name = "bevy_midi"
 
 [dependencies]
 midir = "0.7.0"
+crossbeam-channel = "0.5.1"
 
 [dependencies.bevy]
 version = "0.5"
 default-features = false
 
 [dev-dependencies]
-bevy_config_cam = "0.1.2"
+bevy_config_cam = "0.1.3"
 
 [dev-dependencies.bevy]
 version = "0.5"
