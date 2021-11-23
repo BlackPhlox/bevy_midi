@@ -5,6 +5,7 @@ use crossbeam_channel::Receiver;
 
 fn main() {
     App::build()
+        .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
