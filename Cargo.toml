@@ -23,6 +23,7 @@ name = "bevy_midi"
 [dependencies]
 midir = "0.7.0"
 crossbeam-channel = "0.5.1"
+rodio = "0.14.0"
 
 [dependencies.bevy]
 version = "0.5"

@@ -5,6 +5,8 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use midir::{Ignore, MidiInput};
 use std::io::{stdin, stdout, Write};
 
+pub mod synth;
+
 pub struct Midi;
 impl Plugin for Midi {
     fn build(&self, app: &mut AppBuilder) {
