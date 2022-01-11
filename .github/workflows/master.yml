@@ -54,6 +54,8 @@ jobs:
         run: sudo apt-get install libasound2-dev
       - name: Install libudev
         run: sudo apt install libudev-dev
+      - name: Install libxkbcommon
+        run: sudo apt install libxkbcommon-dev
       - name: Install libwayland
         run: sudo apt install libwayland-dev
       - uses: actions-rs/toolchain@v1
