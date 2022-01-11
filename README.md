@@ -41,6 +41,7 @@ See examples
 |---|---|
 |0.5|0.1.X|
 |0.5|0.2.X|
+|0.6|0.3.X|
 
 # Licensing
 The project is under dual license MIT and Apache 2.0, so joink to your hearts content, just remember the license agreements.

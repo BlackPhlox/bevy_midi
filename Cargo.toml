@@ -1,6 +1,6 @@
 [package]
 name = "bevy_midi"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Black Phlox <bphlox@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -22,21 +22,18 @@ name = "bevy_midi"
 
 [dependencies]
 midir = "0.7.0"
-crossbeam-channel = "0.5.1"
+crossbeam-channel = "0.5.2"
 
 [dependencies.bevy]
-version = "0.5"
+version = "0.6"
 default-features = false
 
-[dev-dependencies]
-bevy_config_cam = "0.1.3"
-
 [dev-dependencies.bevy]
-version = "0.5"
-features = ["render", "bevy_winit", "bevy_wgpu", "bevy_gltf"]
+version = "0.6"
+features = ["render", "bevy_winit", "bevy_gltf"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.5"
+version = "0.6"
 features = ["x11", "wayland"]
 default-features = false

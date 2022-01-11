@@ -1,17 +1,15 @@
 use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_config_cam::ConfigCam;
 use bevy_midi::{Midi, MidiRawData, MidiSettings, KEY_RANGE};
 use crossbeam_channel::Receiver;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(ConfigCam)
         .add_plugin(Midi)
         .insert_resource(MidiSettings {
             is_debug: false,
@@ -22,13 +20,27 @@ fn main() {
         .run();
 }
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 struct Key {
     key_val: String,
     y_reset: f32,
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let mid = -6.3;
+
+    // light
+    commands.spawn_bundle(PointLightBundle {
+        transform: Transform::from_xyz(0.0, 6.0, mid),
+        ..Default::default()
+    });
+
+    //Camera
+    commands.spawn_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
+        ..Default::default()
+    });
+
     let pos: Vec3 = Vec3::new(0., 0., 0.);
 
     let mut black_key: Handle<Scene> = asset_server.load("models/black_key.gltf#Scene0");
@@ -86,7 +98,7 @@ fn handle_midi_input(
     settings: Res<MidiSettings>,
 ) {
     if let Ok(data) = receiver.try_recv() {
-        let [event, index, value] = data.message;
+        let [event, index, _value] = data.message;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;
         let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
@@ -94,10 +106,10 @@ fn handle_midi_input(
         if event.eq(&settings.note_on) {
             for (key, mut transform) in query.iter_mut() {
                 if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
-                    if transform.translation.y > -0.1 {
+                    if transform.translation.y > -0.05 {
                         transform.translation = Vec3::new(
                             transform.translation.x,
-                            transform.translation.y - 0.1,
+                            transform.translation.y - 0.05,
                             transform.translation.z,
                         );
                     }

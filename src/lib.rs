@@ -1,5 +1,5 @@
 use bevy::ecs::schedule::ShouldRun;
-use bevy::prelude::{AppBuilder, Plugin};
+use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use midir::{Ignore, MidiInput};
@@ -7,7 +7,7 @@ use std::io::{stdin, stdout, Write};
 
 pub struct Midi;
 impl Plugin for Midi {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<MidiSettings>()
             .add_startup_system(setup.system())
             .add_system_set(
