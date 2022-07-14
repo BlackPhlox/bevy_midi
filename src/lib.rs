@@ -9,11 +9,11 @@ pub struct Midi;
 impl Plugin for Midi {
     fn build(&self, app: &mut App) {
         app.init_resource::<MidiSettings>()
-            .add_startup_system(setup.system())
+            .add_startup_system(setup)
             .add_system_set(
                 SystemSet::new()
-                    .with_run_criteria(run_if_debug.system())
-                    .with_system(debug_midi.system()),
+                    .with_run_criteria(run_if_debug)
+                    .with_system(debug_midi),
             );
     }
 }

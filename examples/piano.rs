@@ -15,8 +15,8 @@ fn main() {
             is_debug: false,
             ..Default::default()
         })
-        .add_startup_system(setup.system())
-        .add_system(handle_midi_input.system())
+        .add_startup_system(setup)
+        .add_system(handle_midi_input)
         .run();
 }
 
