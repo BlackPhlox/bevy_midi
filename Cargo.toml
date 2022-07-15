@@ -25,15 +25,15 @@ midir = "0.7.0"
 crossbeam-channel = "0.5.2"
 
 [dependencies.bevy]
-version = "0.6"
+version = "0.7"
 default-features = false
 
 [dev-dependencies.bevy]
-version = "0.6"
+version = "0.7"
 features = ["render", "bevy_winit"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.6"
+version = "0.7"
 features = ["x11", "wayland"]
 default-features = false
