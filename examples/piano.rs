@@ -36,7 +36,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 
     //Camera
-    commands.spawn_bundle(PerspectiveCameraBundle {
+    commands.spawn_bundle(Camera3dBundle {
         transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
         ..Default::default()
     });
@@ -75,20 +75,18 @@ fn spawn_note(
     key: &str,
 ) {
     commands
-        .spawn_bundle((
-            Transform {
+        .spawn_bundle(SceneBundle {
+            scene: asset.clone(),
+            transform: Transform {
                 translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
                 scale: Vec3::new(10., 10., 10.),
                 ..Default::default()
             },
-            GlobalTransform::identity(),
-        ))
+            ..Default::default()
+        })
         .insert(Key {
             key_val: format!("{}{}", key, oct),
             y_reset: pos.y,
-        })
-        .with_children(|cell| {
-            cell.spawn_scene(asset.clone());
         });
 }
 

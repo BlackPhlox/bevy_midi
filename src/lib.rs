@@ -18,9 +18,10 @@ impl Plugin for Midi {
     }
 }
 
-fn setup(mut commands: Commands, task_pool: Res<IoTaskPool>) {
+fn setup(mut commands: Commands) {
     let (sender, receiver) = unbounded::<MidiRawData>();
-    task_pool.spawn(handshake(sender)).detach();
+    let thread_pool = IoTaskPool::get();
+    thread_pool.spawn(handshake(sender)).detach();
     commands.insert_resource(receiver);
 }
 
