@@ -1,5 +1,5 @@
 use bevy::prelude::*; 
-use bevy_midi::*;
+use bevy_midi::output::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
     (KeyCode::Key0, 0), 
