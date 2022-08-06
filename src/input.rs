@@ -1,10 +1,10 @@
+use super::KEY_RANGE;
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use midir::{Ignore, MidiInput};
 use std::io::{stdin, stdout, Write};
-use super::KEY_RANGE;
 
 pub struct MidiInputPlugin;
 

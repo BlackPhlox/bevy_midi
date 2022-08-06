@@ -1,7 +1,7 @@
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_midi::{
-    KEY_RANGE,
     input::{MidiInputPlugin, MidiRawData, MidiSettings},
+    KEY_RANGE,
 };
 use crossbeam_channel::Receiver;
 
