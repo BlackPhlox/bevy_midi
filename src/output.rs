@@ -2,7 +2,10 @@ use bevy::{
     prelude::*,
     tasks::IoTaskPool,
 };
-use crossbeam_channel::{Sender, Receiver, SendError};
+use crossbeam_channel::{Sender, Receiver};
+use midir::ConnectErrorKind;
+use std::error::Error;
+use std::fmt::Display;
 use MidiOutputError::*;
 pub use midir::MidiOutputPort;
 
@@ -88,9 +91,30 @@ impl MidiOutputConnection {
 // XXX: give doc comment/implement Error trait
 #[derive(Clone, Debug)]
 pub enum MidiOutputError {
-    ConnectionError,
-    MidiError([u8; 3]),
-    PortRefreshError
+    ConnectionError(ConnectErrorKind),
+    SendError(midir::SendError),
+    SendDisconnectedError([u8; 3]),
+    PortRefreshError,
+}
+
+impl Error for MidiOutputError {}
+impl Display for MidiOutputError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            SendError(e) => e.fmt(f)?,
+            SendDisconnectedError(m) => write!
+                (f, "couldn't send midi message {:?}; output is disconnected", m)?,
+            ConnectionError(k) => match k {
+                ConnectErrorKind::InvalidPort => write!
+                    (f, "couldn't (re)connect to output port: invalid port"
+                )?,
+                ConnectErrorKind::Other(s) => write!
+                    (f, "couldn't (re)connect to output port: {}", s)?,
+            },
+            PortRefreshError => write!(f, "couldn't refresh output ports")?,
+        }
+        Ok(())
+    }
 }
 
 fn setup(
@@ -151,7 +175,7 @@ async fn midi_output(
     receiver: Receiver<Message>,
     sender: Sender<Reply>,
     name: &str
-) -> Result<(), SendError<Reply>>{
+) -> Result<(), crossbeam_channel::SendError<Reply>>{
     use Message::*;
 
     let output = midir::MidiOutput::new(name).unwrap();
@@ -173,12 +197,12 @@ async fn midi_output(
                         sender.send(Reply::Connected)?;
                     }
                     Err(conn_err) => {
-                        connection = None;
-                        output     = Some(conn_err.into_inner());
-                        sender.send(Reply::Error(ConnectionError))?; 
+                        sender.send(Reply::Error(ConnectionError(conn_err.kind())))?;
                         if start_connected {
                             sender.send(Reply::Disconnected)?;
                         }
+                        connection = None;
+                        output     = Some(conn_err.into_inner());
                     }
                 }
             },
@@ -204,21 +228,23 @@ async fn midi_output(
                                 output     = None;
                             }
                             Err(conn_err) => {
+                                sender.send(Reply::Error(ConnectionError(conn_err.kind())))?;
+                                sender.send(Reply::Disconnected)?;
                                 connection = None;
                                 output     = Some(conn_err.into_inner());
-                                sender.send(Reply::Error(ConnectionError))?; 
-                                sender.send(Reply::Disconnected)?;
                             }
                         }
                     }
                 }
             },
             Midi(msg) => {
-                if match &mut connection { 
-                    Some((conn, _)) => conn.send(&msg).is_err(),
-                    None => true
-                } {
-                    sender.send(Reply::Error(MidiError(msg)))?;
+                if let Some((conn, _)) = &mut connection {
+                    if let Err(e) = conn.send(&msg) {
+                        sender.send(Reply::Error(SendError(e)))?;
+                    }
+                }
+                else {
+                    sender.send(Reply::Error(SendDisconnectedError(msg)))?;
                 }
             },
         }
