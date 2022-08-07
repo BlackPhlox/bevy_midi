@@ -101,18 +101,18 @@ impl Display for MidiOutputError {
             SendError(e) => e.fmt(f)?,
             SendDisconnectedError(m) => write!(
                 f,
-                "couldn't send midi message {:?}; output is disconnected",
+                "Couldn't send midi message {:?}; output is disconnected",
                 m
             )?,
             ConnectionError(k) => match k {
                 ConnectErrorKind::InvalidPort => {
-                    write!(f, "couldn't (re)connect to output port: invalid port")?
+                    write!(f, "Couldn't (re)connect to output port: invalid port")?
                 }
                 ConnectErrorKind::Other(s) => {
-                    write!(f, "couldn't (re)connect to output port: {}", s)?
+                    write!(f, "Couldn't (re)connect to output port: {}", s)?
                 }
             },
-            PortRefreshError => write!(f, "couldn't refresh output ports")?,
+            PortRefreshError => write!(f, "Couldn't refresh output ports")?,
         }
         Ok(())
     }
