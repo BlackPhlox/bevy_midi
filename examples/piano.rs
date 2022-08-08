@@ -1,5 +1,8 @@
 use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_midi::{Midi, MidiRawData, MidiSettings, KEY_RANGE};
+use bevy_midi::{
+    input::{MidiInputPlugin, MidiRawData, MidiSettings},
+    KEY_RANGE,
+};
 use crossbeam_channel::Receiver;
 
 fn main() {
@@ -10,7 +13,7 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(Midi)
+        .add_plugin(MidiInputPlugin)
         .insert_resource(MidiSettings {
             is_debug: false,
             ..Default::default()

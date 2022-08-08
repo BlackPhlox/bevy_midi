@@ -14,13 +14,15 @@
 </div>
 </br>
 
-A bevy plugin using [midir](https://github.com/Boddlnagg/midir) and [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
+A bevy plugin using [midir](https://github.com/Boddlnagg/midir) and [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam). 
+This plugin allows you to read or write midi data for a selected midi input.</br>
+
 ## Showcase
 
 Run the examples using:</br>
 
-Terminal only: 
-`cargo run --release --example minimal`</br>
+Output midi: `cargo run --release --example output`</br>
+Terminal only: `cargo run --release --example minimal`</br>
 Virtual Piano: `cargo run --release --example piano`
 
 Running the piano example:</br>
@@ -30,6 +32,7 @@ https://user-images.githubusercontent.com/25123512/122971334-3bae6100-d38f-11eb-
 Notice: Sustain is not handled by the example
 
 Browser support: Still work in progress.
+
 # Setup
 
 See examples
