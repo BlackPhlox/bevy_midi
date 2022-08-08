@@ -99,7 +99,7 @@ fn handle_midi_input(
     settings: Res<MidiSettings>,
 ) {
     if let Ok(data) = receiver.try_recv() {
-        let [event, index, _value] = data.message;
+        let [event, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;
         let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
