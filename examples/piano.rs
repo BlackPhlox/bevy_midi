@@ -102,7 +102,7 @@ fn handle_midi_input(
         let off = index % 12;
         let oct = index.overflowing_div(12).0;
         let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
-        
+
         if data.message.is_note_on() {
             for (key, mut transform) in query.iter_mut() {
                 if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
