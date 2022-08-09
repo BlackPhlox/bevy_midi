@@ -1,3 +1,4 @@
+use super::MidiMessage;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind;
@@ -61,7 +62,7 @@ impl MidiOutput {
     }
 
     /// Send a midi message.
-    pub fn send(&self, msg: [u8; 3]) {
+    pub fn send(&self, msg: MidiMessage) {
         self.sender.send(Message::Midi(msg)).unwrap();
     }
 
@@ -90,7 +91,7 @@ impl MidiOutputConnection {
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
     SendError(midir::SendError),
-    SendDisconnectedError([u8; 3]),
+    SendDisconnectedError(MidiMessage),
     PortRefreshError,
 }
 
@@ -161,7 +162,7 @@ enum Message {
     RefreshPorts,
     ConnectToPort(MidiOutputPort),
     DisconnectFromPort,
-    Midi([u8; 3]),
+    Midi(MidiMessage),
 }
 
 enum Reply {
@@ -237,13 +238,13 @@ async fn midi_output(
                     }
                 }
             },
-            Midi(msg) => {
+            Midi(message) => {
                 if let Some((conn, _)) = &mut connection {
-                    if let Err(e) = conn.send(&msg) {
+                    if let Err(e) = conn.send(&message.msg) {
                         sender.send(Reply::Error(SendError(e)))?;
                     }
                 } else {
-                    sender.send(Reply::Error(SendDisconnectedError(msg)))?;
+                    sender.send(Reply::Error(SendDisconnectedError(message)))?;
                 }
             }
         }

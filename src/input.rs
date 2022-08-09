@@ -1,4 +1,4 @@
-use super::KEY_RANGE;
+use super::{MidiMessage, KEY_RANGE};
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
@@ -30,17 +30,11 @@ fn setup(mut commands: Commands) {
 #[derive(Clone, Copy)]
 pub struct MidiSettings {
     pub is_debug: bool,
-    pub note_on: u8,
-    pub note_off: u8,
 }
 
 impl Default for MidiSettings {
     fn default() -> Self {
-        Self {
-            is_debug: true,
-            note_on: 144,
-            note_off: 128,
-        }
+        Self { is_debug: true }
     }
 }
 
@@ -54,7 +48,7 @@ fn run_if_debug(settings: Res<MidiSettings>) -> ShouldRun {
 
 pub struct MidiRawData {
     pub stamp: u64,
-    pub message: [u8; 3],
+    pub message: MidiMessage,
 }
 
 #[allow(clippy::unused_async)]
@@ -103,7 +97,7 @@ async fn handshake(sender: Sender<MidiRawData>) {
                 sender
                     .send(MidiRawData {
                         stamp,
-                        message: [message[0], message[1], message[2]],
+                        message: [message[0], message[1], message[2]].into(),
                     })
                     .unwrap();
             },
@@ -122,34 +116,27 @@ async fn handshake(sender: Sender<MidiRawData>) {
     println!("Closing connection");
 }
 
-fn debug_midi(receiver: Res<Receiver<MidiRawData>>, settings: Res<MidiSettings>) {
+fn debug_midi(receiver: Res<Receiver<MidiRawData>>) {
     if let Ok(data) = receiver.try_recv() {
         //info!("received message: {:?}", data.message);
-        translate(&data.message, *settings);
+        translate(data.message);
     }
 }
 
-pub fn translate(message: &[u8], settings: MidiSettings) -> (u8, String) {
-    let msg = message[1];
+pub fn translate(message: MidiMessage) -> (u8, String) {
+    let msg = message.msg[1];
     let off = msg % 12;
     let oct = msg.overflowing_div(12).0;
 
-    let midi_type = if message[0].eq(&settings.note_on) {
+    let midi_type = if message.is_note_on() {
         "NoteOn"
-    } else if message[0].eq(&settings.note_off) {
+    } else if message.is_note_off() {
         "NoteOff"
     } else {
         "Other"
     };
 
     let k = KEY_RANGE.iter().nth(off.into()).unwrap();
-    println!(
-        "{}:{}{:?} - Raw: {:?} (len = {})",
-        midi_type,
-        k,
-        oct,
-        message,
-        message.len()
-    );
-    (message[0], format!("{}{:?}", k, oct))
+    println!("{}:{}{:?} - Raw: {:?}", midi_type, k, oct, message.msg,);
+    (message.msg[0], format!("{}{:?}", k, oct))
 }
