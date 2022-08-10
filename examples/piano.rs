@@ -1,9 +1,8 @@
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_midi::{
-    input::{MidiInputPlugin, MidiRawData, MidiInputSettings},
+    input::{MidiInputPlugin, MidiInputSettings, MidiInput},
     KEY_RANGE,
 };
-use crossbeam_channel::Receiver;
 
 fn main() {
     App::new()
@@ -93,10 +92,10 @@ fn spawn_note(
 }
 
 fn handle_midi_input(
-    receiver: Res<Receiver<MidiRawData>>,
+    input: Res<MidiInput>,
     mut query: Query<(&Key, &mut Transform)>,
 ) {
-    if let Ok(data) = receiver.try_recv() {
+    if let Ok(data) = input.receiver.try_recv() {
         let [_, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;

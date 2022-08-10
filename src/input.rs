@@ -3,7 +3,7 @@ use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use midir::{Ignore, MidiInput};
+use midir::Ignore;
 use std::io::{stdin, stdout, Write};
 
 pub struct MidiInputPlugin;
@@ -24,7 +24,7 @@ fn setup(mut commands: Commands) {
     let (sender, receiver) = unbounded::<MidiRawData>();
     let thread_pool = IoTaskPool::get();
     thread_pool.spawn(handshake(sender)).detach();
-    commands.insert_resource(receiver);
+    commands.insert_resource(MidiInput { receiver });
 }
 
 #[derive(Clone, Debug)]
@@ -54,7 +54,7 @@ pub struct MidiRawData {
 #[allow(clippy::unused_async)]
 async fn handshake(sender: Sender<MidiRawData>) {
     let mut input = String::new();
-    let mut midi_in: MidiInput = MidiInput::new("midir reading input").unwrap();
+    let mut midi_in = midir::MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
 
     let in_ports = midi_in.ports();
@@ -116,8 +116,12 @@ async fn handshake(sender: Sender<MidiRawData>) {
     println!("Closing connection");
 }
 
-fn debug_midi(receiver: Res<Receiver<MidiRawData>>) {
-    if let Ok(data) = receiver.try_recv() {
+pub struct MidiInput {
+    pub receiver: Receiver<MidiRawData>,
+}
+
+fn debug_midi(input: Res<MidiInput>) {
+    if let Ok(data) = input.receiver.try_recv() {
         //info!("received message: {:?}", data.message);
         translate(data.message);
     }
