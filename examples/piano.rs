@@ -1,6 +1,6 @@
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_midi::{
-    input::{MidiInputPlugin, MidiRawData, MidiSettings},
+    input::{MidiInputPlugin, MidiRawData, MidiInputSettings},
     KEY_RANGE,
 };
 use crossbeam_channel::Receiver;
@@ -14,9 +14,8 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(MidiInputPlugin)
-        .insert_resource(MidiSettings {
+        .insert_resource(MidiInputSettings {
             is_debug: false,
-            ..Default::default()
         })
         .add_startup_system(setup)
         .add_system(handle_midi_input)

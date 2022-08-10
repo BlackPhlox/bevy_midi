@@ -10,7 +10,7 @@ pub struct MidiInputPlugin;
 
 impl Plugin for MidiInputPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MidiSettings>()
+        app.init_resource::<MidiInputSettings>()
             .add_startup_system(setup)
             .add_system_set(
                 SystemSet::new()
@@ -27,18 +27,18 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(receiver);
 }
 
-#[derive(Clone, Copy)]
-pub struct MidiSettings {
+#[derive(Clone, Debug)]
+pub struct MidiInputSettings {
     pub is_debug: bool,
 }
 
-impl Default for MidiSettings {
+impl Default for MidiInputSettings {
     fn default() -> Self {
         Self { is_debug: true }
     }
 }
 
-fn run_if_debug(settings: Res<MidiSettings>) -> ShouldRun {
+fn run_if_debug(settings: Res<MidiInputSettings>) -> ShouldRun {
     if settings.is_debug {
         ShouldRun::Yes
     } else {
