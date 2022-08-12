@@ -1,10 +1,9 @@
 use super::{MidiMessage, KEY_RANGE};
-use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use midir::Ignore;
 use std::io::{stdin, stdout, Write};
+pub use midir::Ignore;
 
 pub struct MidiInputPlugin;
 
@@ -12,37 +11,29 @@ impl Plugin for MidiInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MidiInputSettings>()
             .add_startup_system(setup)
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(run_if_debug)
-                    .with_system(debug_midi),
-            );
+            .add_system(debug);
     }
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (sender, receiver) = unbounded::<MidiRawData>();
     let thread_pool = IoTaskPool::get();
-    thread_pool.spawn(handshake(sender)).detach();
+    thread_pool.spawn(handshake(sender, settings.clone())).detach();
     commands.insert_resource(MidiInput { receiver });
 }
 
 #[derive(Clone, Debug)]
 pub struct MidiInputSettings {
-    pub is_debug: bool,
+    pub port_name: &'static str,
+    pub ignore: Ignore
 }
 
 impl Default for MidiInputSettings {
     fn default() -> Self {
-        Self { is_debug: true }
-    }
-}
-
-fn run_if_debug(settings: Res<MidiInputSettings>) -> ShouldRun {
-    if settings.is_debug {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
+        Self { 
+            port_name: "bevy_midi",
+            ignore: Ignore::None,
+        }
     }
 }
 
@@ -52,10 +43,10 @@ pub struct MidiRawData {
 }
 
 #[allow(clippy::unused_async)]
-async fn handshake(sender: Sender<MidiRawData>) {
+async fn handshake(sender: Sender<MidiRawData>, settings: MidiInputSettings) {
     let mut input = String::new();
     let mut midi_in = midir::MidiInput::new("midir reading input").unwrap();
-    midi_in.ignore(Ignore::None);
+    midi_in.ignore(settings.ignore);
 
     let in_ports = midi_in.ports();
     let in_port = match in_ports.len() {
@@ -92,7 +83,7 @@ async fn handshake(sender: Sender<MidiRawData>) {
     let _conn_in = midi_in
         .connect(
             in_port,
-            "midir-read-input",
+            settings.port_name,
             move |stamp, message, _| {
                 sender
                     .send(MidiRawData {
@@ -120,27 +111,20 @@ pub struct MidiInput {
     pub receiver: Receiver<MidiRawData>,
 }
 
-fn debug_midi(input: Res<MidiInput>) {
+fn debug(input: Res<MidiInput>) {
     if let Ok(data) = input.receiver.try_recv() {
-        //info!("received message: {:?}", data.message);
-        translate(data.message);
+        let pitch = data.message.msg[1];
+        let octave = pitch / 12;
+        let key = KEY_RANGE[pitch as usize % 12];
+
+        if data.message.is_note_on() {
+            debug!("NoteOn: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
+        }
+        else if data.message.is_note_off() {
+            debug!("NoteOff: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
+        }
+        else {
+            debug!("Other: {:?}", data.message.msg);
+        }
     }
-}
-
-pub fn translate(message: MidiMessage) -> (u8, String) {
-    let msg = message.msg[1];
-    let off = msg % 12;
-    let oct = msg.overflowing_div(12).0;
-
-    let midi_type = if message.is_note_on() {
-        "NoteOn"
-    } else if message.is_note_off() {
-        "NoteOff"
-    } else {
-        "Other"
-    };
-
-    let k = KEY_RANGE.iter().nth(off.into()).unwrap();
-    println!("{}:{}{:?} - Raw: {:?}", midi_type, k, oct, message.msg,);
-    (message.msg[0], format!("{}{:?}", k, oct))
 }

@@ -14,7 +14,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(MidiInputPlugin)
         .insert_resource(MidiInputSettings {
-            is_debug: false,
+            port_name: "piano_example",
+            ..default()
         })
         .add_startup_system(setup)
         .add_system(handle_midi_input)
