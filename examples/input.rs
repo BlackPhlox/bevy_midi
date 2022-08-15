@@ -1,4 +1,7 @@
-use bevy::{log::*, prelude::*};
+use bevy::{
+    log::{Level, LogSettings},
+    prelude::*,
+};
 use bevy_midi::input::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
@@ -32,6 +35,7 @@ fn main() {
         .add_system(disconnect)
         .add_system(show_ports)
         .add_system(show_connection)
+        .add_system(show_last_message)
         .add_startup_system(setup)
         .run();
 }
@@ -80,12 +84,32 @@ fn show_connection(
     if connection.is_changed() {
         let text_section = &mut instructions.single_mut().sections[2];
         if connection.is_connected() {
-            text_section.value = "Connected".to_string();
+            text_section.value = "Connected\n".to_string();
             text_section.style.color = Color::GREEN;
         } else {
-            text_section.value = "Disconnected".to_string();
+            text_section.value = "Disconnected\n".to_string();
             text_section.style.color = Color::RED;
         }
+    }
+}
+
+fn show_last_message(
+    mut midi_data: EventReader<MidiData>,
+    mut instructions: Query<&mut Text, With<Instructions>>,
+) {
+    for data in midi_data.iter() {
+        let text_section = &mut instructions.single_mut().sections[3];
+        text_section.value = format!(
+            "Last Message: {} - {:?}",
+            if data.message.is_note_on() {
+                "NoteOn"
+            } else if data.message.is_note_off() {
+                "NoteOff"
+            } else {
+                "Other"
+            },
+            data.message.msg
+        );
     }
 }
 
@@ -113,11 +137,19 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::BLACK,
                     }),
                     TextSection::new(
-                        "Disconnected",
+                        "Disconnected\n",
                         TextStyle {
                             font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                             font_size: 30.0,
                             color: Color::RED,
+                        },
+                    ),
+                    TextSection::new(
+                        "Last Message:",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 30.0,
+                            color: Color::BLACK,
                         },
                     ),
                 ],

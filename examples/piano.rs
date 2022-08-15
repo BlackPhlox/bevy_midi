@@ -1,8 +1,16 @@
-use bevy::{pbr::AmbientLight, prelude::*};
+use bevy::{
+    log::{Level, LogSettings},
+    pbr::AmbientLight,
+    prelude::*,
+};
 use bevy_midi::{input::*, KEY_RANGE};
 
 fn main() {
     App::new()
+        .insert_resource(LogSettings {
+            filter: "bevy_midi=debug".to_string(),
+            level: Level::WARN,
+        })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
             color: Color::WHITE,
