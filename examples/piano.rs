@@ -1,5 +1,8 @@
 use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_midi::{Midi, MidiRawData, MidiSettings, KEY_RANGE};
+use bevy_midi::{
+    input::{MidiInputPlugin, MidiRawData, MidiSettings},
+    KEY_RANGE,
+};
 use crossbeam_channel::Receiver;
 
 fn main() {
@@ -10,7 +13,7 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(Midi)
+        .add_plugin(MidiInputPlugin)
         .insert_resource(MidiSettings {
             is_debug: false,
             ..Default::default()
@@ -93,15 +96,14 @@ fn spawn_note(
 fn handle_midi_input(
     receiver: Res<Receiver<MidiRawData>>,
     mut query: Query<(&Key, &mut Transform)>,
-    settings: Res<MidiSettings>,
 ) {
     if let Ok(data) = receiver.try_recv() {
-        let [event, index, _value] = data.message;
+        let [_, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;
         let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
 
-        if event.eq(&settings.note_on) {
+        if data.message.is_note_on() {
             for (key, mut transform) in query.iter_mut() {
                 if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
                     if transform.translation.y > -0.05 {
@@ -113,7 +115,7 @@ fn handle_midi_input(
                     }
                 }
             }
-        } else if event.eq(&settings.note_off) {
+        } else if data.message.is_note_off() {
             for (key, mut transform) in query.iter_mut() {
                 if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
                     transform.translation = Vec3::new(
