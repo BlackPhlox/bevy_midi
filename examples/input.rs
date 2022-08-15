@@ -1,4 +1,4 @@
-use bevy::{prelude::*, log::*};
+use bevy::{log::*, prelude::*};
 use bevy_midi::input::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
@@ -16,9 +16,9 @@ const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
 
 fn main() {
     App::new()
-        .insert_resource(LogSettings { 
+        .insert_resource(LogSettings {
             filter: "bevy_midi=debug".to_string(),
-            level: Level::WARN, 
+            level: Level::WARN,
         })
         .insert_resource(MidiInputSettings {
             port_name: "input",

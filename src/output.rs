@@ -11,7 +11,7 @@ pub struct MidiOutputPlugin;
 
 impl Plugin for MidiOutputPlugin {
     fn build(&self, app: &mut App) {
-        app .init_resource::<MidiOutputSettings>()
+        app.init_resource::<MidiOutputSettings>()
             .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
             .add_startup_system(setup)

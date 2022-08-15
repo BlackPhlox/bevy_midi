@@ -127,9 +127,7 @@ fn handle_midi_input(
     }
 }
 
-fn connect_to_first_port(
-    input: Res<MidiInput>,
-) {
+fn connect_to_first_port(input: Res<MidiInput>) {
     if input.is_changed() {
         if let Some((_, port)) = input.ports().get(0) {
             input.connect(port.clone());

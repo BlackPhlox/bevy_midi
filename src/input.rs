@@ -3,7 +3,7 @@ use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
-pub use midir::{MidiInputPort, Ignore};
+pub use midir::{Ignore, MidiInputPort};
 use std::error::Error;
 use std::fmt::Display;
 use MidiInputError::*;
@@ -12,7 +12,7 @@ pub struct MidiInputPlugin;
 
 impl Plugin for MidiInputPlugin {
     fn build(&self, app: &mut App) {
-        app .init_resource::<MidiInputSettings>()
+        app.init_resource::<MidiInputSettings>()
             .init_resource::<MidiInputConnection>()
             .add_event::<MidiInputError>()
             .add_event::<MidiRawData>()
@@ -27,12 +27,12 @@ impl Plugin for MidiInputPlugin {
 pub struct MidiInputSettings {
     pub client_name: &'static str,
     pub port_name: &'static str,
-    pub ignore: Ignore
+    pub ignore: Ignore,
 }
 
 impl Default for MidiInputSettings {
     fn default() -> Self {
-        Self { 
+        Self {
             client_name: "bevy_midi", // XXX: change client name? Test examples?
             port_name: "bevy_midi",
             ignore: Ignore::None,
@@ -50,7 +50,6 @@ pub struct MidiInput {
 }
 
 impl MidiInput {
-    
     // XXX: edit docs
     /// Update the available input ports.
     ///
@@ -61,12 +60,12 @@ impl MidiInput {
     pub fn refresh_ports(&self) {
         self.sender.send(Message::RefreshPorts).unwrap();
     }
-    
+
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
         self.sender.send(Message::ConnectToPort(port)).unwrap();
     }
-    
+
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
         self.sender.send(Message::DisconnectFromPort).unwrap();
@@ -131,7 +130,7 @@ fn reply(
     mut err: EventWriter<MidiInputError>,
     mut midi: EventWriter<MidiRawData>,
 ) {
-   while let Ok(msg) = input.receiver.try_recv() {
+    while let Ok(msg) = input.receiver.try_recv() {
         match msg {
             Reply::AvailablePorts(ports) => {
                 input.ports = ports;
@@ -150,17 +149,19 @@ fn reply(
                 midi.send(m);
             }
         }
-   } 
+    }
 }
 
 fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (m_sender, m_receiver) = crossbeam_channel::unbounded::<Message>();
     let (r_sender, r_receiver) = crossbeam_channel::unbounded::<Reply>();
-    
+
     let thread_pool = IoTaskPool::get();
-    thread_pool.spawn(midi_input(m_receiver, r_sender, settings.clone())).detach();
-    
-    commands.insert_resource(MidiInput { 
+    thread_pool
+        .spawn(midi_input(m_receiver, r_sender, settings.clone()))
+        .detach();
+
+    commands.insert_resource(MidiInput {
         sender: m_sender,
         receiver: r_receiver,
         ports: Vec::new(),
@@ -182,9 +183,9 @@ enum Reply {
 }
 
 async fn midi_input(
-    receiver: Receiver<Message>, 
-    sender: Sender<Reply>, 
-    settings: MidiInputSettings
+    receiver: Receiver<Message>,
+    sender: Sender<Reply>,
+    settings: MidiInputSettings,
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
     use Message::*;
 
@@ -202,13 +203,15 @@ async fn midi_input(
                 let s = sender.clone();
                 let i = input.unwrap_or_else(|| connection.unwrap().0.close().0);
                 let conn = i.connect(
-                    &port, 
-                    settings.port_name, 
-                    move |stamp, message, _| s.send(
-                        Reply::Midi(MidiRawData {
-                        stamp,
-                        message: [message[0], message[1], message[2]].into(),
-                    })).unwrap(),
+                    &port,
+                    settings.port_name,
+                    move |stamp, message, _| {
+                        s.send(Reply::Midi(MidiRawData {
+                            stamp,
+                            message: [message[0], message[1], message[2]].into(),
+                        }))
+                        .unwrap()
+                    },
                     (),
                 );
                 match conn {
@@ -246,13 +249,15 @@ async fn midi_input(
 
                     let s = sender.clone();
                     let conn = i.connect(
-                        &port, 
-                        settings.port_name, 
-                        move |stamp, message, _| s.send(
-                            Reply::Midi(MidiRawData {
-                            stamp,
-                            message: [message[0], message[1], message[2]].into(),
-                        })).unwrap(),
+                        &port,
+                        settings.port_name,
+                        move |stamp, message, _| {
+                            s.send(Reply::Midi(MidiRawData {
+                                stamp,
+                                message: [message[0], message[1], message[2]].into(),
+                            }))
+                            .unwrap()
+                        },
                         (),
                     );
                     match conn {
@@ -267,9 +272,8 @@ async fn midi_input(
                             input = Some(conn_err.into_inner());
                         }
                     }
-
                 }
-            }
+            },
         }
     }
     Ok(())
@@ -288,7 +292,7 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
             .map(|p| input.port_name(&p).map(|n| (n, p)))
             .collect();
         if let Ok(ports) = ports {
-            return Reply::AvailablePorts(ports)
+            return Reply::AvailablePorts(ports);
         }
     }
     Reply::Error(PortRefreshError)
@@ -303,11 +307,9 @@ fn debug(mut midi: EventReader<MidiRawData>) {
 
         if data.message.is_note_on() {
             debug!("NoteOn: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
-        }
-        else if data.message.is_note_off() {
+        } else if data.message.is_note_off() {
             debug!("NoteOff: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
-        }
-        else {
+        } else {
             debug!("Other: {:?}", data.message.msg);
         }
     }
