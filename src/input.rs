@@ -6,7 +6,7 @@ use midir::ConnectErrorKind; // XXX: do we expose this?
 pub use midir::{Ignore, MidiInputPort};
 use std::error::Error;
 use std::fmt::Display;
-use MidiInputError::*;
+use MidiInputError::{ConnectionError, PortRefreshError};
 
 pub struct MidiInputPlugin;
 
@@ -22,7 +22,9 @@ impl Plugin for MidiInputPlugin {
     }
 }
 
-/// Settings for [`MidiInputPlugin`]
+/// Settings for [`MidiInputPlugin`].
+///
+/// This resource must be added before [`MidiInputPlugin`] to take effect.
 #[derive(Clone, Debug)]
 pub struct MidiInputSettings {
     pub client_name: &'static str,
@@ -50,7 +52,6 @@ pub struct MidiInput {
 }
 
 impl MidiInput {
-    // XXX: edit docs
     /// Update the available input ports.
     ///
     /// This method temporarily disconnects from the current midi port, so
@@ -58,17 +59,17 @@ impl MidiInput {
     ///
     /// Change detection is fired when the ports are refreshed.
     pub fn refresh_ports(&self) {
-        self.sender.send(Message::RefreshPorts).unwrap();
+        self.sender.send(Message::RefreshPorts).expect("RefreshPorts");
     }
 
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
-        self.sender.send(Message::ConnectToPort(port)).unwrap();
+        self.sender.send(Message::ConnectToPort(port)).expect("ConnectToPort");
     }
 
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
-        self.sender.send(Message::DisconnectFromPort).unwrap();
+        self.sender.send(Message::DisconnectFromPort).expect("DisconnectFromPort");
     }
 
     /// Get the current input ports, and their names.
@@ -92,14 +93,15 @@ impl MidiInputConnection {
     }
 }
 
-// XXX: rename?
 /// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
+///
+/// This event fires from [`CoreStage::PreUpdate`].
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,
 }
 
-/// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event)
+/// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
 #[derive(Clone, Debug)]
 pub enum MidiInputError {
     ConnectionError(ConnectErrorKind),
@@ -112,10 +114,10 @@ impl Display for MidiInputError {
         match self {
             ConnectionError(k) => match k {
                 ConnectErrorKind::InvalidPort => {
-                    write!(f, "Couldn't (re)connect to input port: invalid port")?
+                    write!(f, "Couldn't (re)connect to input port: invalid port")?;
                 }
                 ConnectErrorKind::Other(s) => {
-                    write!(f, "Couldn't (re)connect to input port: {}", s)?
+                    write!(f, "Couldn't (re)connect to input port: {}", s)?;
                 }
             },
             PortRefreshError => write!(f, "Couldn't refresh input ports")?,
@@ -187,7 +189,7 @@ async fn midi_input(
     sender: Sender<Reply>,
     settings: MidiInputSettings,
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
-    use Message::*;
+    use Message::{ConnectToPort, DisconnectFromPort, RefreshPorts};
 
     let input = midir::MidiInput::new(settings.client_name).unwrap();
     sender.send(get_available_ports(&input))?;
@@ -210,7 +212,7 @@ async fn midi_input(
                             stamp,
                             message: [message[0], message[1], message[2]].into(),
                         }))
-                        .unwrap()
+                        .expect("Send Message");
                     },
                     (),
                 );
@@ -256,7 +258,7 @@ async fn midi_input(
                                 stamp,
                                 message: [message[0], message[1], message[2]].into(),
                             }))
-                            .unwrap()
+                            .expect("Send message");
                         },
                         (),
                     );
