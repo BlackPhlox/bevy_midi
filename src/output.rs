@@ -47,17 +47,23 @@ pub struct MidiOutput {
 impl MidiOutput {
     /// Update the available output ports.
     pub fn refresh_ports(&self) {
-        self.sender.send(Message::RefreshPorts).expect("RefreshPorts");
+        self.sender
+            .send(Message::RefreshPorts)
+            .expect("RefreshPorts");
     }
 
     /// Connect to the given `port`.
     pub fn connect(&self, port: MidiOutputPort) {
-        self.sender.send(Message::ConnectToPort(port)).expect("ConnectToPort");
+        self.sender
+            .send(Message::ConnectToPort(port))
+            .expect("ConnectToPort");
     }
 
     /// Disconnect from the current output port.
     pub fn disconnect(&self) {
-        self.sender.send(Message::DisconnectFromPort).expect("DisconnectFromPort");
+        self.sender
+            .send(Message::DisconnectFromPort)
+            .expect("DisconnectFromPort");
     }
 
     /// Send a midi message.

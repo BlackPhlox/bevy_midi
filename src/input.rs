@@ -59,17 +59,23 @@ impl MidiInput {
     ///
     /// Change detection is fired when the ports are refreshed.
     pub fn refresh_ports(&self) {
-        self.sender.send(Message::RefreshPorts).expect("RefreshPorts");
+        self.sender
+            .send(Message::RefreshPorts)
+            .expect("RefreshPorts");
     }
 
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
-        self.sender.send(Message::ConnectToPort(port)).expect("ConnectToPort");
+        self.sender
+            .send(Message::ConnectToPort(port))
+            .expect("ConnectToPort");
     }
 
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
-        self.sender.send(Message::DisconnectFromPort).expect("DisconnectFromPort");
+        self.sender
+            .send(Message::DisconnectFromPort)
+            .expect("DisconnectFromPort");
     }
 
     /// Get the current input ports, and their names.
