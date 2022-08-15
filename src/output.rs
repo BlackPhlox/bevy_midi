@@ -11,11 +11,11 @@ pub struct MidiOutputPlugin;
 
 impl Plugin for MidiOutputPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MidiOutputSettings>()
-            .insert_resource(MidiOutputConnection { connected: false })
+        app .init_resource::<MidiOutputSettings>()
+            .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
             .add_startup_system(setup)
-            .add_system(on_reply);
+            .add_system_to_stage(CoreStage::PreUpdate, reply);
     }
 }
 
@@ -33,10 +33,9 @@ impl Default for MidiOutputSettings {
     }
 }
 
-/// [`Resource`](bevy::ecs::system::Resource) for sending midi events.
+/// [`Resource`](bevy::ecs::system::Resource) for sending midi messages.
 ///
-/// Change detection will only fire on this resource when its output ports are
-/// refreshed.
+/// Change detection will only fire when its input ports are refreshed.
 pub struct MidiOutput {
     sender: Sender<Message>,
     receiver: Receiver<Reply>,
@@ -56,7 +55,7 @@ impl MidiOutput {
         self.sender.send(Message::ConnectToPort(port)).unwrap();
     }
 
-    /// Disconnect from the current midi port.
+    /// Disconnect from the current output port.
     pub fn disconnect(&self) {
         self.sender.send(Message::DisconnectFromPort).unwrap();
     }
@@ -66,16 +65,17 @@ impl MidiOutput {
         self.sender.send(Message::Midi(msg)).unwrap();
     }
 
-    /// Get the current output ports.
+    /// Get the current output ports, and their names.
     pub fn ports(&self) -> &Vec<(String, MidiOutputPort)> {
         &self.ports
     }
 }
 
-/// [`Resource`](bevy::ecs::system::Resource) for checking whether MidiOutput is
+/// [`Resource`](bevy::ecs::system::Resource) for checking whether [`MidiOutput`] is
 /// connected to any ports.
 ///
 /// Change detection fires whenever the connection changes.
+#[derive(Default)]
 pub struct MidiOutputConnection {
     connected: bool,
 }
@@ -86,7 +86,7 @@ impl MidiOutputConnection {
     }
 }
 
-// XXX: give doc comment/implement Error trait
+/// The [`Error`] type for midi output operations, accessible as an [`Event`](bevy::ecs::event::Event)
 #[derive(Clone, Debug)]
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
@@ -135,7 +135,7 @@ fn setup(mut commands: Commands, settings: Res<MidiOutputSettings>) {
     });
 }
 
-fn on_reply(
+fn reply(
     mut output: ResMut<MidiOutput>,
     mut conn: ResMut<MidiOutputConnection>,
     mut err: EventWriter<MidiOutputError>,
@@ -146,6 +146,7 @@ fn on_reply(
                 output.ports = ports;
             }
             Reply::Error(e) => {
+                warn!("{}", e);
                 err.send(e);
             }
             Reply::Connected => {
@@ -189,7 +190,7 @@ async fn midi_output(
     while let Ok(msg) = receiver.recv() {
         match msg {
             ConnectToPort(port) => {
-                let start_connected = output.is_none();
+                let was_connected = output.is_none();
                 let out = output.unwrap_or_else(|| connection.unwrap().0.close());
                 match out.connect(&port, name) {
                     Ok(conn) => {
@@ -199,7 +200,7 @@ async fn midi_output(
                     }
                     Err(conn_err) => {
                         sender.send(Reply::Error(ConnectionError(conn_err.kind())))?;
-                        if start_connected {
+                        if was_connected {
                             sender.send(Reply::Disconnected)?;
                         }
                         connection = None;

@@ -28,14 +28,13 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(MidiOutputSettings {
-            port_name: "interactive_example",
+            port_name: "output",
         })
         .add_plugin(MidiOutputPlugin)
         .add_system(refresh_ports)
         .add_system(connect)
         .add_system(disconnect)
         .add_system(play_notes)
-        .add_system(print_errors)
         .add_system(show_ports)
         .add_system(show_connection)
         .add_startup_system(setup)
@@ -72,12 +71,6 @@ fn play_notes(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
         if input.just_released(*keycode) {
             output.send([0b10000000, *note, 127].into()); // Note on, channel 1, max velocity
         }
-    }
-}
-
-fn print_errors(mut errors: EventReader<MidiOutputError>) {
-    for err in errors.iter() {
-        error!("{}", err);
     }
 }
 

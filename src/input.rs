@@ -100,7 +100,7 @@ pub struct MidiRawData {
     pub message: MidiMessage,
 }
 
-/// The [`Error`] type for midi input operations, accessable as an [`Event`](bevy::ecs::event::Event)
+/// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event)
 #[derive(Clone, Debug)]
 pub enum MidiInputError {
     ConnectionError(ConnectErrorKind),

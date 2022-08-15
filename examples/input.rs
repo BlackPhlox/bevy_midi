@@ -30,7 +30,6 @@ fn main() {
         .add_system(refresh_ports)
         .add_system(connect)
         .add_system(disconnect)
-        .add_system(print_errors)
         .add_system(show_ports)
         .add_system(show_connection)
         .add_startup_system(setup)
@@ -56,12 +55,6 @@ fn connect(keys: Res<Input<KeyCode>>, input: Res<MidiInput>) {
 fn disconnect(keys: Res<Input<KeyCode>>, input: Res<MidiInput>) {
     if keys.just_pressed(KeyCode::Escape) {
         input.disconnect();
-    }
-}
-
-fn print_errors(mut errors: EventReader<MidiInputError>) {
-    for err in errors.iter() {
-        error!("{}", err);
     }
 }
 
