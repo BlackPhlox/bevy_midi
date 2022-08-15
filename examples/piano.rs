@@ -1,12 +1,16 @@
-use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_midi::{
-    input::{MidiInputPlugin, MidiRawData, MidiSettings},
-    KEY_RANGE,
+use bevy::{
+    log::{Level, LogSettings},
+    pbr::AmbientLight,
+    prelude::*,
 };
-use crossbeam_channel::Receiver;
+use bevy_midi::{input::*, KEY_RANGE};
 
 fn main() {
     App::new()
+        .insert_resource(LogSettings {
+            filter: "bevy_midi=debug".to_string(),
+            level: Level::WARN,
+        })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
             color: Color::WHITE,
@@ -14,12 +18,13 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(MidiInputPlugin)
-        .insert_resource(MidiSettings {
-            is_debug: false,
-            ..Default::default()
+        .insert_resource(MidiInputSettings {
+            port_name: "piano_example",
+            ..default()
         })
         .add_startup_system(setup)
         .add_system(handle_midi_input)
+        .add_system(connect_to_first_port)
         .run();
 }
 
@@ -94,10 +99,10 @@ fn spawn_note(
 }
 
 fn handle_midi_input(
-    receiver: Res<Receiver<MidiRawData>>,
+    mut midi_events: EventReader<MidiData>,
     mut query: Query<(&Key, &mut Transform)>,
 ) {
-    if let Ok(data) = receiver.try_recv() {
+    for data in midi_events.iter() {
         let [_, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;
@@ -126,6 +131,14 @@ fn handle_midi_input(
                 }
             }
         } else {
+        }
+    }
+}
+
+fn connect_to_first_port(input: Res<MidiInput>) {
+    if input.is_changed() {
+        if let Some((_, port)) = input.ports().get(0) {
+            input.connect(port.clone());
         }
     }
 }
