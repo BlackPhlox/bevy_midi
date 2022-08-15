@@ -1,8 +1,5 @@
 use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_midi::{
-    input::{MidiInputPlugin, MidiInputSettings, MidiInput},
-    KEY_RANGE,
-};
+use bevy_midi::{input::*, KEY_RANGE};
 
 fn main() {
     App::new()
@@ -19,6 +16,7 @@ fn main() {
         })
         .add_startup_system(setup)
         .add_system(handle_midi_input)
+        .add_system(connect_to_first_port)
         .run();
 }
 
@@ -93,10 +91,10 @@ fn spawn_note(
 }
 
 fn handle_midi_input(
-    input: Res<MidiInput>,
+    mut midi_events: EventReader<MidiRawData>,
     mut query: Query<(&Key, &mut Transform)>,
 ) {
-    if let Ok(data) = input.receiver.try_recv() {
+    for data in midi_events.iter() {
         let [_, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;
@@ -125,6 +123,16 @@ fn handle_midi_input(
                 }
             }
         } else {
+        }
+    }
+}
+
+fn connect_to_first_port(
+    input: Res<MidiInput>,
+) {
+    if input.is_changed() {
+        if let Some((_, port)) = input.ports().get(0) {
+            input.connect(port.clone());
         }
     }
 }
