@@ -15,7 +15,7 @@ impl Plugin for MidiInputPlugin {
         app.init_resource::<MidiInputSettings>()
             .init_resource::<MidiInputConnection>()
             .add_event::<MidiInputError>()
-            .add_event::<MidiRawData>()
+            .add_event::<MidiData>()
             .add_startup_system(setup)
             .add_system_to_stage(CoreStage::PreUpdate, reply)
             .add_system(debug);
@@ -54,7 +54,7 @@ impl MidiInput {
     /// Update the available input ports.
     ///
     /// This method temporarily disconnects from the current midi port, so
-    /// some [`MidiRawData`] events may be missed.
+    /// some [`MidiData`] events may be missed.
     ///
     /// Change detection is fired when the ports are refreshed.
     pub fn refresh_ports(&self) {
@@ -93,8 +93,8 @@ impl MidiInputConnection {
 }
 
 // XXX: rename?
-/// An [`Event`](bevy::ecs::event::Event) for incoming midi messages.
-pub struct MidiRawData {
+/// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
+pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,
 }
@@ -128,7 +128,7 @@ fn reply(
     mut input: ResMut<MidiInput>,
     mut conn: ResMut<MidiInputConnection>,
     mut err: EventWriter<MidiInputError>,
-    mut midi: EventWriter<MidiRawData>,
+    mut midi: EventWriter<MidiData>,
 ) {
     while let Ok(msg) = input.receiver.try_recv() {
         match msg {
@@ -179,7 +179,7 @@ enum Reply {
     Error(MidiInputError),
     Connected,
     Disconnected,
-    Midi(MidiRawData),
+    Midi(MidiData),
 }
 
 async fn midi_input(
@@ -206,7 +206,7 @@ async fn midi_input(
                     &port,
                     settings.port_name,
                     move |stamp, message, _| {
-                        s.send(Reply::Midi(MidiRawData {
+                        s.send(Reply::Midi(MidiData {
                             stamp,
                             message: [message[0], message[1], message[2]].into(),
                         }))
@@ -252,7 +252,7 @@ async fn midi_input(
                         &port,
                         settings.port_name,
                         move |stamp, message, _| {
-                            s.send(Reply::Midi(MidiRawData {
+                            s.send(Reply::Midi(MidiData {
                                 stamp,
                                 message: [message[0], message[1], message[2]].into(),
                             }))
@@ -299,7 +299,7 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
 }
 
 // A system which debug prints note events
-fn debug(mut midi: EventReader<MidiRawData>) {
+fn debug(mut midi: EventReader<MidiData>) {
     for data in midi.iter() {
         let pitch = data.message.msg[1];
         let octave = pitch / 12;

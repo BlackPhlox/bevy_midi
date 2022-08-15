@@ -91,7 +91,7 @@ fn spawn_note(
 }
 
 fn handle_midi_input(
-    mut midi_events: EventReader<MidiRawData>,
+    mut midi_events: EventReader<MidiData>,
     mut query: Query<(&Key, &mut Transform)>,
 ) {
     for data in midi_events.iter() {
