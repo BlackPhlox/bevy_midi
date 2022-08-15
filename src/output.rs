@@ -20,6 +20,8 @@ impl Plugin for MidiOutputPlugin {
 }
 
 /// Settings for [`MidiOutputPlugin`].
+///
+/// This resource must be added before [`MidiOutputPlugin`] to take effect.
 #[derive(Clone, Debug)]
 pub struct MidiOutputSettings {
     pub port_name: &'static str,
@@ -44,8 +46,6 @@ pub struct MidiOutput {
 
 impl MidiOutput {
     /// Update the available output ports.
-    ///
-    /// Change detection is fired when the ports are refreshed.
     pub fn refresh_ports(&self) {
         self.sender.send(Message::RefreshPorts).unwrap();
     }

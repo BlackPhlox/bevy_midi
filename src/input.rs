@@ -22,7 +22,9 @@ impl Plugin for MidiInputPlugin {
     }
 }
 
-/// Settings for [`MidiInputPlugin`]
+/// Settings for [`MidiInputPlugin`].
+///
+/// This resource must be added before [`MidiInputPlugin`] to take effect.
 #[derive(Clone, Debug)]
 pub struct MidiInputSettings {
     pub client_name: &'static str,
@@ -50,7 +52,6 @@ pub struct MidiInput {
 }
 
 impl MidiInput {
-    // XXX: edit docs
     /// Update the available input ports.
     ///
     /// This method temporarily disconnects from the current midi port, so
@@ -92,14 +93,15 @@ impl MidiInputConnection {
     }
 }
 
-// XXX: rename?
 /// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
+///
+/// This event fires from [`CoreStage::PreUpdate`].
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,
 }
 
-/// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event)
+/// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
 #[derive(Clone, Debug)]
 pub enum MidiInputError {
     ConnectionError(ConnectErrorKind),
