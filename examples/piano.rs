@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::{input::*, KEY_RANGE};
-use bevy_mod_picking::{PickingCameraBundle, DefaultPickingPlugins, PickableBundle, PickingEvent};
+use bevy_mod_picking::{PickingCameraBundle, DefaultPickingPlugins, PickableBundle, PickingEvent, HoverEvent, SelectionEvent};
 
 fn main() {
     App::new()
@@ -28,6 +28,7 @@ fn main() {
         .add_system(handle_midi_input)
         .add_system(connect_to_first_port)
         .add_system_to_stage(CoreStage::PostUpdate, print_events)
+        .add_system(display_keypress)
         .run();
 }
 
@@ -37,13 +38,16 @@ struct Key {
     y_reset: f32,
 }
 
-pub fn print_events(mut events: EventReader<PickingEvent>) {
+pub fn print_events(mut events: EventReader<PickingEvent>, mut commands: Commands) {
     for event in events.iter() {
-        match event {
-            PickingEvent::Selection(e) => info!("A selection event happened: {:?}", e),
-            PickingEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
-            PickingEvent::Clicked(e) => info!("Gee Willikers, it's a click! {:?}", e),
-        }
+        let entity = match event {
+            PickingEvent::Selection(SelectionEvent::JustSelected(e)) => e,
+            PickingEvent::Selection(SelectionEvent::JustDeselected(e)) => e,
+            PickingEvent::Hover(HoverEvent::JustEntered(e)) => e,
+            PickingEvent::Hover(HoverEvent::JustLeft(e)) => e,
+            PickingEvent::Clicked(e) => e,
+        };
+        commands.entity(*entity).insert(PressedKey);
     }
 }
 
@@ -119,9 +123,18 @@ fn spawn_note(
         .insert_bundle(PickableBundle::default());
 }
 
+fn display_keypress(
+    mut query: Query<&mut Transform, With<PressedKey>>
+){
+    for mut t in &mut query {
+        t.translation.y = -0.05;
+    }
+}
+
 fn handle_midi_input(
+    mut commands: Commands,
     mut midi_events: EventReader<MidiData>,
-    mut query: Query<(&Key, &mut Transform)>,
+    query: Query<(Entity, &Key)>,
 ) {
     for data in midi_events.iter() {
         let [_, index, _value] = data.message.msg;
@@ -130,25 +143,15 @@ fn handle_midi_input(
         let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
 
         if data.message.is_note_on() {
-            for (key, mut transform) in query.iter_mut() {
+            for (entity, key) in query.iter() {
                 if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
-                    if transform.translation.y > -0.05 {
-                        transform.translation = Vec3::new(
-                            transform.translation.x,
-                            transform.translation.y - 0.05,
-                            transform.translation.z,
-                        );
-                    }
+                    commands.entity(entity).insert(PressedKey);
                 }
             }
         } else if data.message.is_note_off() {
-            for (key, mut transform) in query.iter_mut() {
+            for (entity, key) in query.iter() {
                 if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
-                    transform.translation = Vec3::new(
-                        transform.translation.x,
-                        key.y_reset,
-                        transform.translation.z,
-                    );
+                    commands.entity(entity).remove::<PressedKey>();
                 }
             }
         } else {
