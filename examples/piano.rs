@@ -28,7 +28,8 @@ fn main() {
         .add_system(handle_midi_input)
         .add_system(connect_to_first_port)
         .add_system_to_stage(CoreStage::PostUpdate, print_events)
-        .add_system(display_keypress)
+        .add_system(display_press)
+        .add_system(display_release)
         .run();
 }
 
@@ -123,13 +124,22 @@ fn spawn_note(
         .insert_bundle(PickableBundle::default());
 }
 
-fn display_keypress(
+fn display_press(
     mut query: Query<&mut Transform, With<PressedKey>>
 ){
     for mut t in &mut query {
         t.translation.y = -0.05;
     }
 }
+
+fn display_release(
+    mut query: Query<(&mut Transform, &Key), Without<PressedKey>>
+){
+    for (mut t, k) in &mut query {
+        t.translation.y = k.y_reset;
+    }
+}
+
 
 fn handle_midi_input(
     mut commands: Commands,
