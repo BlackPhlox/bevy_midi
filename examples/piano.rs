@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::{input::*, KEY_RANGE};
+use bevy_mod_picking::{PickingCameraBundle, DefaultPickingPlugins, PickableBundle, PickingEvent};
 
 fn main() {
     App::new()
@@ -17,6 +18,7 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPickingPlugins)
         .add_plugin(MidiInputPlugin)
         .insert_resource(MidiInputSettings {
             port_name: "piano_example",
@@ -25,6 +27,7 @@ fn main() {
         .add_startup_system(setup)
         .add_system(handle_midi_input)
         .add_system(connect_to_first_port)
+        .add_system_to_stage(CoreStage::PostUpdate, print_events)
         .run();
 }
 
@@ -34,7 +37,20 @@ struct Key {
     y_reset: f32,
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn print_events(mut events: EventReader<PickingEvent>) {
+    for event in events.iter() {
+        match event {
+            PickingEvent::Selection(e) => info!("A selection event happened: {:?}", e),
+            PickingEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
+            PickingEvent::Clicked(e) => info!("Gee Willikers, it's a click! {:?}", e),
+        }
+    }
+}
+
+#[derive(Component)]
+struct PressedKey;
+
+fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>, asset_server: Res<AssetServer>) {
     let mid = -6.3;
 
     // light
@@ -47,44 +63,48 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(Camera3dBundle {
         transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
         ..Default::default()
-    });
+    }).insert_bundle(PickingCameraBundle::default());
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
 
-    let mut black_key: Handle<Scene> = asset_server.load("models/black_key.gltf#Scene0");
-    let mut white_key_0: Handle<Scene> = asset_server.load("models/white_key_0.gltf#Scene0");
-    let mut white_key_1: Handle<Scene> = asset_server.load("models/white_key_1.gltf#Scene0");
-    let mut white_key_2: Handle<Scene> = asset_server.load("models/white_key_2.gltf#Scene0");
+    let mut black_key: Handle<Mesh> = asset_server.load("models/black_key.gltf#Mesh0/Primitive0");
+    let mut white_key_0: Handle<Mesh> = asset_server.load("models/white_key_0.gltf#Mesh0/Primitive0");
+    let mut white_key_1: Handle<Mesh> = asset_server.load("models/white_key_1.gltf#Mesh0/Primitive0");
+    let mut white_key_2: Handle<Mesh> = asset_server.load("models/white_key_2.gltf#Mesh0/Primitive0");
+    let b_mat = materials.add(Color::rgb(0.1, 0.1, 0.1).into());
+    let w_mat = materials.add(Color::rgb(1.0, 1.0, 1.0).into());
 
     //Create keyboard layout
     let bk_off = Vec3::new(0., 0.06, 0.);
     for i in 0..8 {
-        spawn_note(&mut commands, 0.00, pos, &mut white_key_0, i, "C");
-        spawn_note(&mut commands, 0.15, pos + bk_off, &mut black_key, i, "C#");
-        spawn_note(&mut commands, 0.27, pos, &mut white_key_1, i, "D");
-        spawn_note(&mut commands, 0.39, pos + bk_off, &mut black_key, i, "D#");
-        spawn_note(&mut commands, 0.54, pos, &mut white_key_2, i, "E");
-        spawn_note(&mut commands, 0.69, pos, &mut white_key_0, i, "F");
-        spawn_note(&mut commands, 0.85, pos + bk_off, &mut black_key, i, "F#");
-        spawn_note(&mut commands, 0.96, pos, &mut white_key_1, i, "G");
-        spawn_note(&mut commands, 1.08, pos + bk_off, &mut black_key, i, "G#");
-        spawn_note(&mut commands, 1.19, pos, &mut white_key_1, i, "A");
-        spawn_note(&mut commands, 1.31, pos + bk_off, &mut black_key, i, "A#");
-        spawn_note(&mut commands, 1.46, pos, &mut white_key_2, i, "B");
+        spawn_note(&mut commands, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
+        spawn_note(&mut commands, &b_mat, 0.15, pos + bk_off, &mut black_key, i, "C#");
+        spawn_note(&mut commands, &w_mat, 0.27, pos, &mut white_key_1, i, "D");
+        spawn_note(&mut commands, &b_mat, 0.39, pos + bk_off, &mut black_key, i, "D#");
+        spawn_note(&mut commands, &w_mat, 0.54, pos, &mut white_key_2, i, "E");
+        spawn_note(&mut commands, &w_mat, 0.69, pos, &mut white_key_0, i, "F");
+        spawn_note(&mut commands, &b_mat, 0.85, pos + bk_off, &mut black_key, i, "F#");
+        spawn_note(&mut commands, &w_mat, 0.96, pos, &mut white_key_1, i, "G");
+        spawn_note(&mut commands, &b_mat, 1.08, pos + bk_off, &mut black_key, i, "G#");
+        spawn_note(&mut commands, &w_mat, 1.19, pos, &mut white_key_1, i, "A");
+        spawn_note(&mut commands, &b_mat, 1.31, pos + bk_off, &mut black_key, i, "A#");
+        spawn_note(&mut commands, &w_mat, 1.46, pos, &mut white_key_2, i, "B");
     }
 }
 
 fn spawn_note(
     commands: &mut Commands,
+    mat: &Handle<StandardMaterial>,
     offset_z: f32,
     pos: Vec3,
-    asset: &mut Handle<Scene>,
+    asset: &mut Handle<Mesh>,
     oct: i32,
     key: &str,
 ) {
     commands
-        .spawn_bundle(SceneBundle {
-            scene: asset.clone(),
+        .spawn_bundle(PbrBundle {
+            mesh: asset.clone(),
+            material: mat.clone(),
             transform: Transform {
                 translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
                 scale: Vec3::new(10., 10., 10.),
@@ -95,7 +115,8 @@ fn spawn_note(
         .insert(Key {
             key_val: format!("{}{}", key, oct),
             y_reset: pos.y,
-        });
+        })
+        .insert_bundle(PickableBundle::default());
 }
 
 fn handle_midi_input(

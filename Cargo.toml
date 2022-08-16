@@ -24,6 +24,9 @@ name = "bevy_midi"
 midir = "0.8"
 crossbeam-channel = "0.5.6"
 
+[dev-dependencies]
+bevy_mod_picking = "0.8.2"
+
 [dependencies.bevy]
 version = "0.8"
 default-features = false
