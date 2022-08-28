@@ -4,7 +4,10 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::{input::*, KEY_RANGE};
-use bevy_mod_picking::{PickingCameraBundle, DefaultPickingPlugins, PickableBundle, PickingEvent, HoverEvent, SelectionEvent};
+use bevy_mod_picking::{
+    DefaultPickingPlugins, HoverEvent, PickableBundle, PickingCameraBundle, PickingEvent,
+    SelectionEvent,
+};
 
 fn main() {
     App::new()
@@ -39,7 +42,11 @@ struct Key {
     y_reset: f32,
 }
 
-pub fn print_events(mut events: EventReader<PickingEvent>, mut commands: Commands) {
+pub fn print_events(
+    mut events: EventReader<PickingEvent>,
+    mut commands: Commands,
+    mouse_button_input: Res<Input<MouseButton>>,
+) {
     for event in events.iter() {
         let entity = match event {
             PickingEvent::Selection(SelectionEvent::JustSelected(e)) => e,
@@ -48,13 +55,19 @@ pub fn print_events(mut events: EventReader<PickingEvent>, mut commands: Command
             PickingEvent::Hover(HoverEvent::JustLeft(e)) => e,
             PickingEvent::Clicked(e) => e,
         };
-        commands.entity(*entity).insert(PressedKey);
+
+        if mouse_button_input.pressed(MouseButton::Left) {
+            commands.entity(*entity).insert(PressedKey);
+        } else {
+            commands.entity(*entity).remove::<PressedKey>();
+        }
     }
 }
 
 #[derive(Component)]
 struct PressedKey;
 
+#[rustfmt::skip]
 fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>, asset_server: Res<AssetServer>) {
     let mid = -6.3;
 
@@ -80,19 +93,20 @@ fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>,
     let w_mat = materials.add(Color::rgb(1.0, 1.0, 1.0).into());
 
     //Create keyboard layout
-    let bk_off = Vec3::new(0., 0.06, 0.);
+    let pos_black = pos + Vec3::new(0., 0.06, 0.);
+    
     for i in 0..8 {
         spawn_note(&mut commands, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
-        spawn_note(&mut commands, &b_mat, 0.15, pos + bk_off, &mut black_key, i, "C#");
+        spawn_note(&mut commands, &b_mat, 0.15, pos_black, &mut black_key, i, "C#");
         spawn_note(&mut commands, &w_mat, 0.27, pos, &mut white_key_1, i, "D");
-        spawn_note(&mut commands, &b_mat, 0.39, pos + bk_off, &mut black_key, i, "D#");
+        spawn_note(&mut commands, &b_mat, 0.39, pos_black, &mut black_key, i, "D#");
         spawn_note(&mut commands, &w_mat, 0.54, pos, &mut white_key_2, i, "E");
         spawn_note(&mut commands, &w_mat, 0.69, pos, &mut white_key_0, i, "F");
-        spawn_note(&mut commands, &b_mat, 0.85, pos + bk_off, &mut black_key, i, "F#");
+        spawn_note(&mut commands, &b_mat, 0.85, pos_black, &mut black_key, i, "F#");
         spawn_note(&mut commands, &w_mat, 0.96, pos, &mut white_key_1, i, "G");
-        spawn_note(&mut commands, &b_mat, 1.08, pos + bk_off, &mut black_key, i, "G#");
+        spawn_note(&mut commands, &b_mat, 1.08, pos_black, &mut black_key, i, "G#");
         spawn_note(&mut commands, &w_mat, 1.19, pos, &mut white_key_1, i, "A");
-        spawn_note(&mut commands, &b_mat, 1.31, pos + bk_off, &mut black_key, i, "A#");
+        spawn_note(&mut commands, &b_mat, 1.31, pos_black, &mut black_key, i, "A#");
         spawn_note(&mut commands, &w_mat, 1.46, pos, &mut white_key_2, i, "B");
     }
 }
@@ -124,22 +138,17 @@ fn spawn_note(
         .insert_bundle(PickableBundle::default());
 }
 
-fn display_press(
-    mut query: Query<&mut Transform, With<PressedKey>>
-){
+fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
     for mut t in &mut query {
         t.translation.y = -0.05;
     }
 }
 
-fn display_release(
-    mut query: Query<(&mut Transform, &Key), Without<PressedKey>>
-){
+fn display_release(mut query: Query<(&mut Transform, &Key), Without<PressedKey>>) {
     for (mut t, k) in &mut query {
         t.translation.y = k.y_reset;
     }
 }
-
 
 fn handle_midi_input(
     mut commands: Commands,
