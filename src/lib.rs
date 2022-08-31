@@ -8,6 +8,10 @@ pub const KEY_RANGE: [&str; 12] = [
 const NOTE_ON_STATUS: u8 = 0b1001_0000;
 const NOTE_OFF_STATUS: u8 = 0b1000_0000;
 
+const REFRESH_PORTS_ERROR_MSG: &str = "Couldn't refresh input ports";
+const CONNECT_TO_PORT_ERROR_MSG: &str = "Failed to connect to port";
+const DISCONNECT_FROM_PORT_ERROR_MSG: &str = "Failed to disconnect from port";
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct MidiMessage {
     pub msg: [u8; 3],

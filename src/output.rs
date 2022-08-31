@@ -1,3 +1,5 @@
+use crate::{CONNECT_TO_PORT_ERROR_MSG, DISCONNECT_FROM_PORT_ERROR_MSG, REFRESH_PORTS_ERROR_MSG};
+
 use super::MidiMessage;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
@@ -49,21 +51,21 @@ impl MidiOutput {
     pub fn refresh_ports(&self) {
         self.sender
             .send(Message::RefreshPorts)
-            .expect("RefreshPorts");
+            .expect(REFRESH_PORTS_ERROR_MSG);
     }
 
     /// Connect to the given `port`.
     pub fn connect(&self, port: MidiOutputPort) {
         self.sender
             .send(Message::ConnectToPort(port))
-            .expect("ConnectToPort");
+            .expect(CONNECT_TO_PORT_ERROR_MSG);
     }
 
     /// Disconnect from the current output port.
     pub fn disconnect(&self) {
         self.sender
             .send(Message::DisconnectFromPort)
-            .expect("DisconnectFromPort");
+            .expect(DISCONNECT_FROM_PORT_ERROR_MSG);
     }
 
     /// Send a midi message.
