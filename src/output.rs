@@ -5,21 +5,23 @@ use midir::ConnectErrorKind;
 pub use midir::MidiOutputPort;
 use std::error::Error;
 use std::fmt::Display;
-use MidiOutputError::*;
+use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
 
 pub struct MidiOutputPlugin;
 
 impl Plugin for MidiOutputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MidiOutputSettings>()
-            .insert_resource(MidiOutputConnection { connected: false })
+            .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
             .add_startup_system(setup)
-            .add_system(on_reply);
+            .add_system_to_stage(CoreStage::PreUpdate, reply);
     }
 }
 
 /// Settings for [`MidiOutputPlugin`].
+///
+/// This resource must be added before [`MidiOutputPlugin`] to take effect.
 #[derive(Clone, Debug)]
 pub struct MidiOutputSettings {
     pub port_name: &'static str,
@@ -33,10 +35,9 @@ impl Default for MidiOutputSettings {
     }
 }
 
-/// [`Resource`](bevy::ecs::system::Resource) for sending midi events.
+/// [`Resource`](bevy::ecs::system::Resource) for sending midi messages.
 ///
-/// Change detection will only fire on this resource when its output ports are
-/// refreshed.
+/// Change detection will only fire when its input ports are refreshed.
 pub struct MidiOutput {
     sender: Sender<Message>,
     receiver: Receiver<Reply>,
@@ -45,48 +46,57 @@ pub struct MidiOutput {
 
 impl MidiOutput {
     /// Update the available output ports.
-    ///
-    /// Change detection is fired when the ports are refreshed.
     pub fn refresh_ports(&self) {
-        self.sender.send(Message::RefreshPorts).unwrap();
+        self.sender
+            .send(Message::RefreshPorts)
+            .expect("Couldn't refresh output ports");
     }
 
     /// Connect to the given `port`.
     pub fn connect(&self, port: MidiOutputPort) {
-        self.sender.send(Message::ConnectToPort(port)).unwrap();
+        self.sender
+            .send(Message::ConnectToPort(port))
+            .expect("Failed to connect to port");
     }
 
-    /// Disconnect from the current midi port.
+    /// Disconnect from the current output port.
     pub fn disconnect(&self) {
-        self.sender.send(Message::DisconnectFromPort).unwrap();
+        self.sender
+            .send(Message::DisconnectFromPort)
+            .expect("Failed to disconnect from port");
     }
 
     /// Send a midi message.
     pub fn send(&self, msg: MidiMessage) {
-        self.sender.send(Message::Midi(msg)).unwrap();
+        self.sender
+            .send(Message::Midi(msg))
+            .expect("Couldn't send MIDI message");
     }
 
-    /// Get the current output ports.
+    /// Get the current output ports, and their names.
+    #[must_use]
     pub fn ports(&self) -> &Vec<(String, MidiOutputPort)> {
         &self.ports
     }
 }
 
-/// [`Resource`](bevy::ecs::system::Resource) for checking whether MidiOutput is
+/// [`Resource`](bevy::ecs::system::Resource) for checking whether [`MidiOutput`] is
 /// connected to any ports.
 ///
 /// Change detection fires whenever the connection changes.
+#[derive(Default)]
 pub struct MidiOutputConnection {
     connected: bool,
 }
 
 impl MidiOutputConnection {
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         self.connected
     }
 }
 
-// XXX: give doc comment/implement Error trait
+/// The [`Error`] type for midi output operations, accessible as an [`Event`](bevy::ecs::event::Event)
 #[derive(Clone, Debug)]
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
@@ -107,10 +117,10 @@ impl Display for MidiOutputError {
             )?,
             ConnectionError(k) => match k {
                 ConnectErrorKind::InvalidPort => {
-                    write!(f, "Couldn't (re)connect to output port: invalid port")?
+                    write!(f, "Couldn't (re)connect to output port: invalid port")?;
                 }
                 ConnectErrorKind::Other(s) => {
-                    write!(f, "Couldn't (re)connect to output port: {}", s)?
+                    write!(f, "Couldn't (re)connect to output port: {}", s)?;
                 }
             },
             PortRefreshError => write!(f, "Couldn't refresh output ports")?,
@@ -135,7 +145,7 @@ fn setup(mut commands: Commands, settings: Res<MidiOutputSettings>) {
     });
 }
 
-fn on_reply(
+fn reply(
     mut output: ResMut<MidiOutput>,
     mut conn: ResMut<MidiOutputConnection>,
     mut err: EventWriter<MidiOutputError>,
@@ -146,6 +156,7 @@ fn on_reply(
                 output.ports = ports;
             }
             Reply::Error(e) => {
+                warn!("{}", e);
                 err.send(e);
             }
             Reply::Connected => {
@@ -177,7 +188,7 @@ async fn midi_output(
     sender: Sender<Reply>,
     name: &str,
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
-    use Message::*;
+    use Message::{ConnectToPort, DisconnectFromPort, Midi, RefreshPorts};
 
     let output = midir::MidiOutput::new(name).unwrap();
     sender.send(get_available_ports(&output))?;
@@ -189,7 +200,7 @@ async fn midi_output(
     while let Ok(msg) = receiver.recv() {
         match msg {
             ConnectToPort(port) => {
-                let start_connected = output.is_none();
+                let was_connected = output.is_none();
                 let out = output.unwrap_or_else(|| connection.unwrap().0.close());
                 match out.connect(&port, name) {
                     Ok(conn) => {
@@ -199,7 +210,7 @@ async fn midi_output(
                     }
                     Err(conn_err) => {
                         sender.send(Reply::Error(ConnectionError(conn_err.kind())))?;
-                        if start_connected {
+                        if was_connected {
                             sender.send(Reply::Disconnected)?;
                         }
                         connection = None;
