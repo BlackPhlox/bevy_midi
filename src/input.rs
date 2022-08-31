@@ -1,5 +1,3 @@
-use crate::{CONNECT_TO_PORT_ERROR_MSG, DISCONNECT_FROM_PORT_ERROR_MSG, REFRESH_PORTS_ERROR_MSG};
-
 use super::{MidiMessage, KEY_RANGE};
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
@@ -63,21 +61,21 @@ impl MidiInput {
     pub fn refresh_ports(&self) {
         self.sender
             .send(Message::RefreshPorts)
-            .expect(REFRESH_PORTS_ERROR_MSG);
+            .expect("Couldn't refresh input ports");
     }
 
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
         self.sender
             .send(Message::ConnectToPort(port))
-            .expect(CONNECT_TO_PORT_ERROR_MSG);
+            .expect("Failed to connect to port");
     }
 
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
         self.sender
             .send(Message::DisconnectFromPort)
-            .expect(DISCONNECT_FROM_PORT_ERROR_MSG);
+            .expect("Failed to disconnect from port");
     }
 
     /// Get the current input ports, and their names.

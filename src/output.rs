@@ -1,5 +1,3 @@
-use crate::{CONNECT_TO_PORT_ERROR_MSG, DISCONNECT_FROM_PORT_ERROR_MSG, REFRESH_PORTS_ERROR_MSG};
-
 use super::MidiMessage;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
@@ -51,26 +49,28 @@ impl MidiOutput {
     pub fn refresh_ports(&self) {
         self.sender
             .send(Message::RefreshPorts)
-            .expect(REFRESH_PORTS_ERROR_MSG);
+            .expect("Couldn't refresh output ports");
     }
 
     /// Connect to the given `port`.
     pub fn connect(&self, port: MidiOutputPort) {
         self.sender
             .send(Message::ConnectToPort(port))
-            .expect(CONNECT_TO_PORT_ERROR_MSG);
+            .expect("Failed to connect to port");
     }
 
     /// Disconnect from the current output port.
     pub fn disconnect(&self) {
         self.sender
             .send(Message::DisconnectFromPort)
-            .expect(DISCONNECT_FROM_PORT_ERROR_MSG);
+            .expect("Failed to disconnect from port");
     }
 
     /// Send a midi message.
     pub fn send(&self, msg: MidiMessage) {
-        self.sender.send(Message::Midi(msg)).expect("Send MIDI");
+        self.sender
+            .send(Message::Midi(msg))
+            .expect("Couldn't send MIDI message");
     }
 
     /// Get the current output ports, and their names.
