@@ -66,10 +66,10 @@ fn disconnect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
 fn play_notes(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
     for (keycode, note) in &KEY_NOTE_MAP {
         if input.just_pressed(*keycode) {
-            output.send([0b10010000, *note, 127].into()); // Note on, channel 1, max velocity
+            output.send([0b1001_0000, *note, 127].into()); // Note on, channel 1, max velocity
         }
         if input.just_released(*keycode) {
-            output.send([0b10000000, *note, 127].into()); // Note on, channel 1, max velocity
+            output.send([0b1000_0000, *note, 127].into()); // Note on, channel 1, max velocity
         }
     }
 }

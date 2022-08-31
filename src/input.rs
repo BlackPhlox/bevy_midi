@@ -6,7 +6,7 @@ use midir::ConnectErrorKind; // XXX: do we expose this?
 pub use midir::{Ignore, MidiInputPort};
 use std::error::Error;
 use std::fmt::Display;
-use MidiInputError::*;
+use MidiInputError::{ConnectionError, PortRefreshError};
 
 pub struct MidiInputPlugin;
 
@@ -59,20 +59,27 @@ impl MidiInput {
     ///
     /// Change detection is fired when the ports are refreshed.
     pub fn refresh_ports(&self) {
-        self.sender.send(Message::RefreshPorts).unwrap();
+        self.sender
+            .send(Message::RefreshPorts)
+            .expect("Couldn't refresh input ports");
     }
 
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
-        self.sender.send(Message::ConnectToPort(port)).unwrap();
+        self.sender
+            .send(Message::ConnectToPort(port))
+            .expect("Failed to connect to port");
     }
 
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
-        self.sender.send(Message::DisconnectFromPort).unwrap();
+        self.sender
+            .send(Message::DisconnectFromPort)
+            .expect("Failed to disconnect from port");
     }
 
     /// Get the current input ports, and their names.
+    #[must_use]
     pub fn ports(&self) -> &Vec<(String, MidiInputPort)> {
         &self.ports
     }
@@ -88,6 +95,7 @@ pub struct MidiInputConnection {
 }
 
 impl MidiInputConnection {
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         self.connected
     }
@@ -114,10 +122,10 @@ impl Display for MidiInputError {
         match self {
             ConnectionError(k) => match k {
                 ConnectErrorKind::InvalidPort => {
-                    write!(f, "Couldn't (re)connect to input port: invalid port")?
+                    write!(f, "Couldn't (re)connect to input port: invalid port")?;
                 }
                 ConnectErrorKind::Other(s) => {
-                    write!(f, "Couldn't (re)connect to input port: {}", s)?
+                    write!(f, "Couldn't (re)connect to input port: {}", s)?;
                 }
             },
             PortRefreshError => write!(f, "Couldn't refresh input ports")?,
@@ -189,7 +197,7 @@ async fn midi_input(
     sender: Sender<Reply>,
     settings: MidiInputSettings,
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
-    use Message::*;
+    use Message::{ConnectToPort, DisconnectFromPort, RefreshPorts};
 
     let input = midir::MidiInput::new(settings.client_name).unwrap();
     sender.send(get_available_ports(&input))?;
@@ -208,11 +216,10 @@ async fn midi_input(
                     &port,
                     settings.port_name,
                     move |stamp, message, _| {
-                        s.send(Reply::Midi(MidiData {
+                        let _ = s.send(Reply::Midi(MidiData {
                             stamp,
                             message: [message[0], message[1], message[2]].into(),
-                        }))
-                        .unwrap()
+                        }));
                     },
                     (),
                 );
@@ -254,11 +261,10 @@ async fn midi_input(
                         &port,
                         settings.port_name,
                         move |stamp, message, _| {
-                            s.send(Reply::Midi(MidiData {
+                            let _ = s.send(Reply::Midi(MidiData {
                                 stamp,
                                 message: [message[0], message[1], message[2]].into(),
-                            }))
-                            .unwrap()
+                            }));
                         },
                         (),
                     );

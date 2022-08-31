@@ -5,7 +5,7 @@ use midir::ConnectErrorKind;
 pub use midir::MidiOutputPort;
 use std::error::Error;
 use std::fmt::Display;
-use MidiOutputError::*;
+use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
 
 pub struct MidiOutputPlugin;
 
@@ -47,25 +47,34 @@ pub struct MidiOutput {
 impl MidiOutput {
     /// Update the available output ports.
     pub fn refresh_ports(&self) {
-        self.sender.send(Message::RefreshPorts).unwrap();
+        self.sender
+            .send(Message::RefreshPorts)
+            .expect("Couldn't refresh output ports");
     }
 
     /// Connect to the given `port`.
     pub fn connect(&self, port: MidiOutputPort) {
-        self.sender.send(Message::ConnectToPort(port)).unwrap();
+        self.sender
+            .send(Message::ConnectToPort(port))
+            .expect("Failed to connect to port");
     }
 
     /// Disconnect from the current output port.
     pub fn disconnect(&self) {
-        self.sender.send(Message::DisconnectFromPort).unwrap();
+        self.sender
+            .send(Message::DisconnectFromPort)
+            .expect("Failed to disconnect from port");
     }
 
     /// Send a midi message.
     pub fn send(&self, msg: MidiMessage) {
-        self.sender.send(Message::Midi(msg)).unwrap();
+        self.sender
+            .send(Message::Midi(msg))
+            .expect("Couldn't send MIDI message");
     }
 
     /// Get the current output ports, and their names.
+    #[must_use]
     pub fn ports(&self) -> &Vec<(String, MidiOutputPort)> {
         &self.ports
     }
@@ -81,6 +90,7 @@ pub struct MidiOutputConnection {
 }
 
 impl MidiOutputConnection {
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         self.connected
     }
@@ -107,10 +117,10 @@ impl Display for MidiOutputError {
             )?,
             ConnectionError(k) => match k {
                 ConnectErrorKind::InvalidPort => {
-                    write!(f, "Couldn't (re)connect to output port: invalid port")?
+                    write!(f, "Couldn't (re)connect to output port: invalid port")?;
                 }
                 ConnectErrorKind::Other(s) => {
-                    write!(f, "Couldn't (re)connect to output port: {}", s)?
+                    write!(f, "Couldn't (re)connect to output port: {}", s)?;
                 }
             },
             PortRefreshError => write!(f, "Couldn't refresh output ports")?,
@@ -178,7 +188,7 @@ async fn midi_output(
     sender: Sender<Reply>,
     name: &str,
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
-    use Message::*;
+    use Message::{ConnectToPort, DisconnectFromPort, Midi, RefreshPorts};
 
     let output = midir::MidiOutput::new(name).unwrap();
     sender.send(get_available_ports(&output))?;
