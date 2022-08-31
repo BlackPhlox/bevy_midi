@@ -61,24 +61,25 @@ impl MidiInput {
     pub fn refresh_ports(&self) {
         self.sender
             .send(Message::RefreshPorts)
-            .expect("RefreshPorts");
+            .expect("Couldn't refresh input ports");
     }
 
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
         self.sender
             .send(Message::ConnectToPort(port))
-            .expect("ConnectToPort");
+            .expect("Failed to connect to port");
     }
 
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
         self.sender
             .send(Message::DisconnectFromPort)
-            .expect("DisconnectFromPort");
+            .expect("Failed to disconnected from port");
     }
 
     /// Get the current input ports, and their names.
+    #[must_use]
     pub fn ports(&self) -> &Vec<(String, MidiInputPort)> {
         &self.ports
     }
@@ -94,6 +95,7 @@ pub struct MidiInputConnection {
 }
 
 impl MidiInputConnection {
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         self.connected
     }
@@ -214,11 +216,10 @@ async fn midi_input(
                     &port,
                     settings.port_name,
                     move |stamp, message, _| {
-                        s.send(Reply::Midi(MidiData {
+                        let _ = s.send(Reply::Midi(MidiData {
                             stamp,
                             message: [message[0], message[1], message[2]].into(),
-                        }))
-                        .expect("Send Message");
+                        }));
                     },
                     (),
                 );
@@ -260,11 +261,10 @@ async fn midi_input(
                         &port,
                         settings.port_name,
                         move |stamp, message, _| {
-                            s.send(Reply::Midi(MidiData {
+                            let _ = s.send(Reply::Midi(MidiData {
                                 stamp,
                                 message: [message[0], message[1], message[2]].into(),
-                            }))
-                            .expect("Send message");
+                            }));
                         },
                         (),
                     );

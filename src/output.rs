@@ -72,6 +72,7 @@ impl MidiOutput {
     }
 
     /// Get the current output ports, and their names.
+    #[must_use]
     pub fn ports(&self) -> &Vec<(String, MidiOutputPort)> {
         &self.ports
     }
@@ -87,6 +88,7 @@ pub struct MidiOutputConnection {
 }
 
 impl MidiOutputConnection {
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         self.connected
     }
