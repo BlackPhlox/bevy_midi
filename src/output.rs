@@ -22,7 +22,7 @@ impl Plugin for MidiOutputPlugin {
 /// Settings for [`MidiOutputPlugin`].
 ///
 /// This resource must be added before [`MidiOutputPlugin`] to take effect.
-#[derive(Clone, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct MidiOutputSettings {
     pub port_name: &'static str,
 }
@@ -38,6 +38,7 @@ impl Default for MidiOutputSettings {
 /// [`Resource`](bevy::ecs::system::Resource) for sending midi messages.
 ///
 /// Change detection will only fire when its input ports are refreshed.
+#[derive(Resource)]
 pub struct MidiOutput {
     sender: Sender<Message>,
     receiver: Receiver<Reply>,
@@ -84,7 +85,7 @@ impl MidiOutput {
 /// connected to any ports.
 ///
 /// Change detection fires whenever the connection changes.
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct MidiOutputConnection {
     connected: bool,
 }

@@ -25,7 +25,7 @@ impl Plugin for MidiInputPlugin {
 /// Settings for [`MidiInputPlugin`].
 ///
 /// This resource must be added before [`MidiInputPlugin`] to take effect.
-#[derive(Clone, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct MidiInputSettings {
     pub client_name: &'static str,
     pub port_name: &'static str,
@@ -45,6 +45,8 @@ impl Default for MidiInputSettings {
 /// [`Resource`](bevy::ecs::system::Resource) for receiving midi messages.
 ///
 /// Change detection will only fire when its input ports are refreshed.
+
+#[derive(Resource)]
 pub struct MidiInput {
     receiver: Receiver<Reply>,
     sender: Sender<Message>,
@@ -89,7 +91,7 @@ impl MidiInput {
 /// connected to any ports.
 ///
 /// Change detection fires whenever the connection changes.
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct MidiInputConnection {
     connected: bool,
 }
@@ -104,6 +106,7 @@ impl MidiInputConnection {
 /// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
 ///
 /// This event fires from [`CoreStage::PreUpdate`].
+#[derive(Resource)]
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,

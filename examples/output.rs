@@ -106,10 +106,10 @@ fn show_connection(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             text: Text {
                 sections: vec![
                     TextSection::new(

@@ -1,5 +1,5 @@
 use bevy::{
-    log::{Level, LogSettings},
+    log::{Level, LogPlugin},
     pbr::AmbientLight,
     prelude::*,
 };
@@ -11,16 +11,15 @@ use bevy_mod_picking::{
 
 fn main() {
     App::new()
-        .insert_resource(LogSettings {
-            filter: "bevy_midi=debug".to_string(),
-            level: Level::WARN,
-        })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
         })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(LogPlugin {
+            level: Level::WARN,
+            filter: "bevy_midi=debug".to_string(),
+        }))
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(MidiInputPlugin)
         .insert_resource(MidiInputSettings {
@@ -72,16 +71,16 @@ fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>,
     let mid = -6.3;
 
     // light
-    commands.spawn_bundle(PointLightBundle {
+    commands.spawn(PointLightBundle {
         transform: Transform::from_xyz(0.0, 6.0, mid),
         ..Default::default()
     });
 
     //Camera
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
         ..Default::default()
-    }).insert_bundle(PickingCameraBundle::default());
+    }).insert(PickingCameraBundle::default());
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
 
@@ -121,7 +120,7 @@ fn spawn_note(
     key: &str,
 ) {
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: asset.clone(),
             material: mat.clone(),
             transform: Transform {
@@ -135,7 +134,7 @@ fn spawn_note(
             key_val: format!("{}{}", key, oct),
             y_reset: pos.y,
         })
-        .insert_bundle(PickableBundle::default());
+        .insert(PickableBundle::default());
 }
 
 fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
