@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, text::BreakLineOn};
 use bevy_midi::output::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
@@ -138,7 +138,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         },
                     ),
                 ],
-                alignment: TextAlignment::TOP_LEFT,
+                ..Default::default()
             },
             ..default()
         })

@@ -17,7 +17,7 @@ impl Plugin for MidiInputPlugin {
             .add_event::<MidiInputError>()
             .add_event::<MidiData>()
             .add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PreUpdate, reply)
+            .add_system(reply.in_base_set(CoreSet::PreUpdate))
             .add_system(debug);
     }
 }

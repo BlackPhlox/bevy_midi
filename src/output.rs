@@ -15,7 +15,7 @@ impl Plugin for MidiOutputPlugin {
             .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
             .add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PreUpdate, reply);
+            .add_system(reply.in_base_set(CoreSet::PreUpdate));
     }
 }
 

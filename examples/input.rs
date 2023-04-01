@@ -113,10 +113,10 @@ fn show_last_message(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
-    commands
-        .spawn_bundle(TextBundle {
+    commands.spawn((
+        TextBundle {
             text: Text {
                 sections: vec![
                     TextSection::new(
@@ -152,9 +152,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         },
                     ),
                 ],
-                alignment: TextAlignment::TOP_LEFT,
+                ..Default::default()
             },
             ..default()
-        })
-        .insert(Instructions);
+        },
+        Instructions,
+    ));
 }

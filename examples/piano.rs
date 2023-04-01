@@ -3,7 +3,11 @@ use bevy::{
     pbr::AmbientLight,
     prelude::*,
 };
-use bevy_midi::{input::*, KEY_RANGE};
+use bevy_midi::{
+    input::*,
+    output::{MidiOutput, MidiOutputPlugin, MidiOutputSettings},
+    KEY_RANGE,
+};
 use bevy_mod_picking::{
     DefaultPickingPlugins, HoverEvent, PickableBundle, PickingCameraBundle, PickingEvent,
     SelectionEvent,
@@ -11,7 +15,7 @@ use bevy_mod_picking::{
 
 fn main() {
     App::new()
-        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa::Sample4)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
@@ -22,14 +26,14 @@ fn main() {
         }))
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(MidiInputPlugin)
-        .insert_resource(MidiInputSettings {
-            port_name: "piano_example",
-            ..default()
-        })
+        .init_resource::<MidiInputSettings>()
+        .add_plugin(MidiOutputPlugin)
+        .init_resource::<MidiOutputSettings>()
         .add_startup_system(setup)
         .add_system(handle_midi_input)
-        .add_system(connect_to_first_port)
-        .add_system_to_stage(CoreStage::PostUpdate, print_events)
+        .add_system(connect_to_first_input_port)
+        .add_system(connect_to_first_output_port)
+        .add_system(print_events.in_base_set(CoreSet::PostUpdate))
         .add_system(display_press)
         .add_system(display_release)
         .run();
@@ -77,10 +81,10 @@ fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>,
     });
 
     //Camera
-    commands.spawn(Camera3dBundle {
+    commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
         ..Default::default()
-    }).insert(PickingCameraBundle::default());
+    }, PickingCameraBundle::default()));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
 
@@ -177,7 +181,15 @@ fn handle_midi_input(
     }
 }
 
-fn connect_to_first_port(input: Res<MidiInput>) {
+fn connect_to_first_input_port(input: Res<MidiInput>) {
+    if input.is_changed() {
+        if let Some((_, port)) = input.ports().get(0) {
+            input.connect(port.clone());
+        }
+    }
+}
+
+fn connect_to_first_output_port(input: Res<MidiOutput>) {
     if input.is_changed() {
         if let Some((_, port)) = input.ports().get(0) {
             input.connect(port.clone());
