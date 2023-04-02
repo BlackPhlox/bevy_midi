@@ -71,7 +71,11 @@ pub fn print_events(
 struct PressedKey;
 
 #[rustfmt::skip]
-fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
     let mid = -6.3;
 
     // light
@@ -81,10 +85,13 @@ fn setup(mut commands: Commands,mut materials: ResMut<Assets<StandardMaterial>>,
     });
 
     //Camera
-    commands.spawn((Camera3dBundle {
-        transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
-        ..Default::default()
-    }, PickingCameraBundle::default()));
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
+            ..Default::default()
+        },
+        PickingCameraBundle::default(),
+    ));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
 
@@ -123,8 +130,8 @@ fn spawn_note(
     oct: i32,
     key: &str,
 ) {
-    commands
-        .spawn(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: asset.clone(),
             material: mat.clone(),
             transform: Transform {
@@ -133,12 +140,13 @@ fn spawn_note(
                 ..Default::default()
             },
             ..Default::default()
-        })
-        .insert(Key {
+        },
+        Key {
             key_val: format!("{}{}", key, oct),
             y_reset: pos.y,
-        })
-        .insert(PickableBundle::default());
+        },
+        PickableBundle::default(),
+    ));
 }
 
 fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
