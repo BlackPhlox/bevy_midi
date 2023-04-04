@@ -14,22 +14,30 @@
 </div>
 </br>
 
-A bevy plugin using [midir](https://github.com/Boddlnagg/midir) and [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam). This plugin allows you to read or write midi data for a selected midi input.</br>(Currently, write is not implemented yet)
+A bevy plugin using [midir](https://github.com/Boddlnagg/midir) and [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam). 
+This plugin allows you to read or write midi data for a selected midi input.</br>
+
 ## Showcase
 
 Run the examples using:</br>
 
-Terminal only: 
-`cargo run --release --example minimal`</br>
-Virtual Piano: `cargo run --release --example piano`
+Basic midi output: `cargo run --release --example output`</br>
+Basic midi input: `cargo run --release --example input`</br>
+UI Virtual Piano: `cargo run --release --example egui`</br>
+3D Virtual Piano: `cargo run --release --example piano`</br>
 
-Running the piano example:</br>
+Running the UI Virtual Piano example:</br>
+
+![piano](https://user-images.githubusercontent.com/25123512/229900178-debdf202-5161-443f-8c1f-5978b02b7fec.PNG)
+
+Running the 3D Virtual Piano example:</br>
 
 https://user-images.githubusercontent.com/25123512/122971334-3bae6100-d38f-11eb-9605-4c314b088ff2.mp4
 
 Notice: Sustain is not handled by the example
 
 Browser support: Still work in progress.
+
 # Setup
 
 See examples
@@ -44,6 +52,7 @@ See examples
 |0.6|0.3.X|
 |0.7|0.4.X|
 |0.8|0.5.X|
+|0.10|0.6.X|
 
 # Licensing
 The project is under dual license MIT and Apache 2.0, so joink to your hearts content, just remember the license agreements.

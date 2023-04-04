@@ -1,6 +1,6 @@
 [package]
 name = "bevy_midi"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Black Phlox <bphlox@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -21,19 +21,24 @@ exclude = [
 name = "bevy_midi"
 
 [dependencies]
-midir = "0.8"
+midir = "0.9"
 crossbeam-channel = "0.5.6"
 
+[dev-dependencies]
+bevy_egui = { version = "0.20", features = ["immutable_ctx"]}
+strum = { version = "0.24", features = ["derive"] }
+bevy_mod_picking = "0.12"
+
 [dependencies.bevy]
-version = "0.8"
+version = "0.10"
 default-features = false
 
 [dev-dependencies.bevy]
-version = "0.8"
-features = ["bevy_asset", "bevy_scene", "render", "bevy_winit"]
+version = "0.10"
+features = ["bevy_core_pipeline","bevy_asset", "bevy_scene", "bevy_render", "bevy_winit", "bevy_gltf", "bevy_ui", "bevy_text"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.8"
+version = "0.10"
 features = ["x11", "wayland"]
 default-features = false
