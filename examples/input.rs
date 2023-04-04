@@ -1,5 +1,5 @@
 use bevy::{
-    log::{Level, LogSettings},
+    log::{Level, LogPlugin},
     prelude::*,
 };
 use bevy_midi::input::*;
@@ -19,16 +19,15 @@ const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
 
 fn main() {
     App::new()
-        .insert_resource(LogSettings {
-            filter: "bevy_midi=debug".to_string(),
-            level: Level::WARN,
-        })
         .insert_resource(MidiInputSettings {
             port_name: "input",
             client_name: "input",
             ..default()
         })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(LogPlugin {
+            level: Level::WARN,
+            filter: "bevy_midi=debug".to_string(),
+        }))
         .add_plugin(MidiInputPlugin)
         .add_system(refresh_ports)
         .add_system(connect)
@@ -114,10 +113,10 @@ fn show_last_message(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
-    commands
-        .spawn_bundle(TextBundle {
+    commands.spawn((
+        TextBundle {
             text: Text {
                 sections: vec![
                     TextSection::new(
@@ -153,9 +152,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         },
                     ),
                 ],
-                alignment: TextAlignment::TOP_LEFT,
+                ..Default::default()
             },
             ..default()
-        })
-        .insert(Instructions);
+        },
+        Instructions,
+    ));
 }

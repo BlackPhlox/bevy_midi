@@ -1,5 +1,3 @@
-use crate::{CONNECT_TO_PORT_ERROR_MSG, DISCONNECT_FROM_PORT_ERROR_MSG, REFRESH_PORTS_ERROR_MSG};
-
 use super::{MidiMessage, KEY_RANGE};
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
@@ -19,7 +17,7 @@ impl Plugin for MidiInputPlugin {
             .add_event::<MidiInputError>()
             .add_event::<MidiData>()
             .add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PreUpdate, reply)
+            .add_system(reply.in_base_set(CoreSet::PreUpdate))
             .add_system(debug);
     }
 }
@@ -27,7 +25,7 @@ impl Plugin for MidiInputPlugin {
 /// Settings for [`MidiInputPlugin`].
 ///
 /// This resource must be added before [`MidiInputPlugin`] to take effect.
-#[derive(Clone, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct MidiInputSettings {
     pub client_name: &'static str,
     pub port_name: &'static str,
@@ -47,6 +45,8 @@ impl Default for MidiInputSettings {
 /// [`Resource`](bevy::ecs::system::Resource) for receiving midi messages.
 ///
 /// Change detection will only fire when its input ports are refreshed.
+
+#[derive(Resource)]
 pub struct MidiInput {
     receiver: Receiver<Reply>,
     sender: Sender<Message>,
@@ -63,21 +63,21 @@ impl MidiInput {
     pub fn refresh_ports(&self) {
         self.sender
             .send(Message::RefreshPorts)
-            .expect(REFRESH_PORTS_ERROR_MSG);
+            .expect("Couldn't refresh input ports");
     }
 
     /// Connects to the given `port`.
     pub fn connect(&self, port: MidiInputPort) {
         self.sender
             .send(Message::ConnectToPort(port))
-            .expect(CONNECT_TO_PORT_ERROR_MSG);
+            .expect("Failed to connect to port");
     }
 
     /// Disconnects from the current input port.
     pub fn disconnect(&self) {
         self.sender
             .send(Message::DisconnectFromPort)
-            .expect(DISCONNECT_FROM_PORT_ERROR_MSG);
+            .expect("Failed to disconnect from port");
     }
 
     /// Get the current input ports, and their names.
@@ -91,7 +91,7 @@ impl MidiInput {
 /// connected to any ports.
 ///
 /// Change detection fires whenever the connection changes.
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct MidiInputConnection {
     connected: bool,
 }
@@ -106,6 +106,7 @@ impl MidiInputConnection {
 /// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
 ///
 /// This event fires from [`CoreStage::PreUpdate`].
+#[derive(Resource)]
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,

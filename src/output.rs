@@ -1,5 +1,3 @@
-use crate::{CONNECT_TO_PORT_ERROR_MSG, DISCONNECT_FROM_PORT_ERROR_MSG, REFRESH_PORTS_ERROR_MSG};
-
 use super::MidiMessage;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
@@ -17,14 +15,14 @@ impl Plugin for MidiOutputPlugin {
             .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
             .add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PreUpdate, reply);
+            .add_system(reply.in_base_set(CoreSet::PreUpdate));
     }
 }
 
 /// Settings for [`MidiOutputPlugin`].
 ///
 /// This resource must be added before [`MidiOutputPlugin`] to take effect.
-#[derive(Clone, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct MidiOutputSettings {
     pub port_name: &'static str,
 }
@@ -40,6 +38,7 @@ impl Default for MidiOutputSettings {
 /// [`Resource`](bevy::ecs::system::Resource) for sending midi messages.
 ///
 /// Change detection will only fire when its input ports are refreshed.
+#[derive(Resource)]
 pub struct MidiOutput {
     sender: Sender<Message>,
     receiver: Receiver<Reply>,
@@ -51,26 +50,28 @@ impl MidiOutput {
     pub fn refresh_ports(&self) {
         self.sender
             .send(Message::RefreshPorts)
-            .expect(REFRESH_PORTS_ERROR_MSG);
+            .expect("Couldn't refresh output ports");
     }
 
     /// Connect to the given `port`.
     pub fn connect(&self, port: MidiOutputPort) {
         self.sender
             .send(Message::ConnectToPort(port))
-            .expect(CONNECT_TO_PORT_ERROR_MSG);
+            .expect("Failed to connect to port");
     }
 
     /// Disconnect from the current output port.
     pub fn disconnect(&self) {
         self.sender
             .send(Message::DisconnectFromPort)
-            .expect(DISCONNECT_FROM_PORT_ERROR_MSG);
+            .expect("Failed to disconnect from port");
     }
 
     /// Send a midi message.
     pub fn send(&self, msg: MidiMessage) {
-        self.sender.send(Message::Midi(msg)).expect("Send MIDI");
+        self.sender
+            .send(Message::Midi(msg))
+            .expect("Couldn't send MIDI message");
     }
 
     /// Get the current output ports, and their names.
@@ -84,7 +85,7 @@ impl MidiOutput {
 /// connected to any ports.
 ///
 /// Change detection fires whenever the connection changes.
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct MidiOutputConnection {
     connected: bool,
 }
