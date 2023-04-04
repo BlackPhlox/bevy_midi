@@ -5,7 +5,7 @@ use bevy_egui::{
     egui::{self, Color32, ColorImage, ImageButton, Key, TextureHandle, TextureOptions, Ui},
     EguiContext, EguiPlugin,
 };
-use bevy_midi::KEY_RANGE;
+use bevy_midi::prelude::*;
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
 //Adapted to bevy_egui from https://github.com/gamercade-io/gamercade_console/blob/audio_editor/gamercade_editor/src/ui/audio/instrument_editor/piano_roll.rs

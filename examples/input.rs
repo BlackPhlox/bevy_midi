@@ -2,7 +2,7 @@ use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
-use bevy_midi::input::*;
+use bevy_midi::prelude::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
     (KeyCode::Key0, 0),

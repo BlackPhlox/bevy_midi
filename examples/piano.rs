@@ -2,13 +2,8 @@ use bevy::{
     log::{Level, LogPlugin},
     pbr::AmbientLight,
     prelude::*,
-    window::WindowResolution,
 };
-use bevy_midi::{
-    input::*,
-    output::{MidiOutput, MidiOutputPlugin, MidiOutputSettings},
-    KEY_RANGE,
-};
+use bevy_midi::prelude::*;
 use bevy_mod_picking::{
     DefaultPickingPlugins, HoverEvent, PickableBundle, PickingCameraBundle, PickingEvent,
     SelectionEvent,
