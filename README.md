@@ -23,9 +23,14 @@ Run the examples using:</br>
 
 Basic midi output: `cargo run --release --example output`</br>
 Basic midi input: `cargo run --release --example input`</br>
-Virtual Piano: `cargo run --release --example piano`
+UI Virtual Piano: `cargo run --release --example egui`</br>
+3D Virtual Piano: `cargo run --release --example piano`</br>
 
-Running the piano example:</br>
+Running the UI Virtual Piano example:</br>
+
+![piano](https://user-images.githubusercontent.com/25123512/229900178-debdf202-5161-443f-8c1f-5978b02b7fec.PNG)
+
+Running the 3D Virtual Piano example:</br>
 
 https://user-images.githubusercontent.com/25123512/122971334-3bae6100-d38f-11eb-9605-4c314b088ff2.mp4
 
