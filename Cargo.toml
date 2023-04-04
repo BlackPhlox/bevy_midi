@@ -1,6 +1,6 @@
 [package]
 name = "bevy_midi"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Black Phlox <bphlox@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -25,6 +25,8 @@ midir = "0.9"
 crossbeam-channel = "0.5.6"
 
 [dev-dependencies]
+bevy_egui = { version = "0.20", features = ["immutable_ctx"]}
+strum = { version = "0.24", features = ["derive"] }
 bevy_mod_picking = "0.12"
 
 [dependencies.bevy]

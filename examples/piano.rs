@@ -2,6 +2,7 @@ use bevy::{
     log::{Level, LogPlugin},
     pbr::AmbientLight,
     prelude::*,
+    window::WindowResolution,
 };
 use bevy_midi::{
     input::*,
