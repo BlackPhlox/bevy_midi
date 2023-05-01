@@ -1,8 +1,8 @@
 use super::MidiMessage;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
-use midir::ConnectErrorKind;
-pub use midir::MidiOutputPort;
+use nodi::midir::ConnectErrorKind;
+pub use nodi::midir::MidiOutputPort;
 use std::error::Error;
 use std::fmt::Display;
 use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
@@ -101,7 +101,7 @@ impl MidiOutputConnection {
 #[derive(Clone, Debug)]
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
-    SendError(midir::SendError),
+    SendError(nodi::midir::SendError),
     SendDisconnectedError(MidiMessage),
     PortRefreshError,
 }
@@ -191,12 +191,12 @@ async fn midi_output(
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
     use Message::{ConnectToPort, DisconnectFromPort, Midi, RefreshPorts};
 
-    let output = midir::MidiOutput::new(name).unwrap();
+    let output = nodi::midir::MidiOutput::new(name).unwrap();
     sender.send(get_available_ports(&output))?;
 
     // Invariant: exactly one of `output` or `connection` is Some
-    let mut output: Option<midir::MidiOutput> = Some(output);
-    let mut connection: Option<(midir::MidiOutputConnection, MidiOutputPort)> = None;
+    let mut output: Option<nodi::midir::MidiOutput> = Some(output);
+    let mut connection: Option<(nodi::midir::MidiOutputConnection, MidiOutputPort)> = None;
 
     while let Ok(msg) = receiver.recv() {
         match msg {
@@ -269,7 +269,7 @@ async fn midi_output(
 // Returns either Reply::AvailablePorts or Reply::PortRefreshError
 // If there's an error getting port names, it's because the available ports changed,
 // so it tries again (up to 10 times)
-fn get_available_ports(output: &midir::MidiOutput) -> Reply {
+fn get_available_ports(output: &nodi::midir::MidiOutput) -> Reply {
     for _ in 0..10 {
         let ports = output.ports();
         let ports: Result<Vec<_>, _> = ports

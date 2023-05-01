@@ -21,13 +21,14 @@ exclude = [
 name = "bevy_midi"
 
 [dependencies]
-midir = "0.9"
-crossbeam-channel = "0.5.6"
+crossbeam-channel = "0.5.8"
+nodi = { version = "0.19", features = ["midir"] }
 
 [dev-dependencies]
 bevy_egui = { version = "0.20", features = ["immutable_ctx"]}
 strum = { version = "0.24", features = ["derive"] }
 bevy_mod_picking = "0.12"
+midly = "0.5.2"
 
 [dependencies.bevy]
 version = "0.10"

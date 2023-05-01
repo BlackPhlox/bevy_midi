@@ -1,9 +1,9 @@
 use super::{MidiMessage, KEY_RANGE};
 use bevy::prelude::Plugin;
-use bevy::{prelude::*, tasks::IoTaskPool};
+use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
 use crossbeam_channel::{Receiver, Sender};
-use midir::ConnectErrorKind; // XXX: do we expose this?
-pub use midir::{Ignore, MidiInputPort};
+use nodi::midir::ConnectErrorKind; // XXX: do we expose this?
+pub use nodi::midir::{Ignore, MidiInputPort};
 use std::error::Error;
 use std::fmt::Display;
 use MidiInputError::{ConnectionError, PortRefreshError};
@@ -169,7 +169,7 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (m_sender, m_receiver) = crossbeam_channel::unbounded::<Message>();
     let (r_sender, r_receiver) = crossbeam_channel::unbounded::<Reply>();
 
-    let thread_pool = IoTaskPool::get();
+    let thread_pool = AsyncComputeTaskPool::get();
     thread_pool
         .spawn(midi_input(m_receiver, r_sender, settings.clone()))
         .detach();
@@ -202,12 +202,12 @@ async fn midi_input(
 ) -> Result<(), crossbeam_channel::SendError<Reply>> {
     use Message::{ConnectToPort, DisconnectFromPort, RefreshPorts};
 
-    let input = midir::MidiInput::new(settings.client_name).unwrap();
+    let input = nodi::midir::MidiInput::new(settings.client_name).unwrap();
     sender.send(get_available_ports(&input))?;
 
     // Invariant: exactly one of `input` or `connection` is Some
-    let mut input: Option<midir::MidiInput> = Some(input);
-    let mut connection: Option<(midir::MidiInputConnection<()>, MidiInputPort)> = None;
+    let mut input: Option<nodi::midir::MidiInput> = Some(input);
+    let mut connection: Option<(nodi::midir::MidiInputConnection<()>, MidiInputPort)> = None;
 
     while let Ok(msg) = receiver.recv() {
         match msg {
@@ -295,7 +295,7 @@ async fn midi_input(
 // Returns either Reply::AvailablePorts or Reply::PortRefreshError
 // If there's an error getting port names, it's because the available ports changed,
 // so it tries again (up to 10 times)
-fn get_available_ports(input: &midir::MidiInput) -> Reply {
+fn get_available_ports(input: &nodi::midir::MidiInput) -> Reply {
     for _ in 0..10 {
         let ports = input.ports();
         let ports: Result<Vec<_>, _> = ports

@@ -1,9 +1,12 @@
-use std::iter::{Cycle, Peekable};
+use std::{
+    iter::{Cycle, Peekable},
+    thread::Thread,
+};
 
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Color32, ColorImage, ImageButton, Key, TextureHandle, TextureOptions, Ui},
-    EguiContext, EguiPlugin,
+    EguiContext, EguiContexts, EguiPlugin,
 };
 use bevy_midi::prelude::*;
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
@@ -19,8 +22,15 @@ fn main() {
         // or after the `EguiSystem::BeginFrame` system (which belongs to the `CoreStage::PreUpdate` stage).
         .add_system(ui_example)
         .init_resource::<PianoRoll>()
+        .init_resource::<SelectedOutputPort>()
+        .add_plugin(MidiOutputPlugin)
+        .add_system(select_device_ui)
+        //.add_system(play_notes)
         .run();
 }
+
+#[derive(Resource, Default)]
+struct SelectedOutputPort(Option<(usize, String)>);
 
 const BOTTOM_NOTE_INDEX_START: usize = 36;
 const KEYBOARD_KEY_COUNT: usize = 24;
@@ -182,7 +192,7 @@ impl PianoRoll {
         index >= self.bottom_note_index && index < self.bottom_note_index + KEYBOARD_KEY_COUNT
     }
 
-    fn update_key_states(&mut self, ui: &mut Ui) {
+    fn update_key_states(&mut self, ui: &mut Ui, midi_output: &MidiOutput) {
         let input = ui.input(|i| i.key_pressed(egui::Key::A));
         let next_keys = std::array::from_fn(|index| ui.input(|i| i.key_down(KEYS[index])));
 
@@ -197,6 +207,12 @@ impl PianoRoll {
                         KEY_RANGE[index % 12],
                         (self.bottom_note_index + index) / 12
                     );
+                    midi_output
+                        .send([0b1001_0000, (self.bottom_note_index + index) as u8, 127].into());
+
+                    midi_output
+                        .send([0b1000_0000, (self.bottom_note_index + index) as u8, 127].into());
+                    // Note on, channel 1, max velocity
                     /*
                     if *next {
 
@@ -245,7 +261,7 @@ impl PianoRoll {
     fn draw_piano_keys(
         &mut self,
         ui: &mut Ui,
-        //selected_instrument: usize,
+        midi_output: &MidiOutput, //selected_instrument: usize,
     ) {
         let texture_id = self
             .default_piano_texture
@@ -275,6 +291,7 @@ impl PianoRoll {
                     if ui.add(button_top).clicked() {
                         //sync.trigger_note(index, selected_instrument);
                         println!("Pressed {}{}", KEY_RANGE[index % 12], index / 12);
+                        midi_output.send([0b1001_0000, index as u8, 127].into());
                     };
                 });
             });
@@ -296,6 +313,7 @@ impl PianoRoll {
                         if ui.add(button_bottom).clicked() {
                             //sync.trigger_note(index, selected_instrument);
                             println!("Pressed {}{}", KEY_RANGE[index % 12], index / 12);
+                            midi_output.send([0b1001_0000, index as u8, 127].into());
                         };
                     }
                 }
@@ -304,7 +322,11 @@ impl PianoRoll {
     }
 }
 
-fn ui_example(egui_context: Query<&EguiContext>, mut piano: ResMut<PianoRoll>) {
+fn ui_example(
+    egui_context: Query<&EguiContext>,
+    mut piano: ResMut<PianoRoll>,
+    output: Res<MidiOutput>,
+) {
     if let Ok(ctx) = egui_context.get_single() {
         egui::Window::new("Virtual Keyboard Piano").show(ctx.get(), |ui| {
             ui.label(format!(
@@ -313,7 +335,7 @@ fn ui_example(egui_context: Query<&EguiContext>, mut piano: ResMut<PianoRoll>) {
                 piano.bottom_note_index / 12 + 2
             ));
 
-            piano.update_key_states(ui);
+            piano.update_key_states(ui, &output);
             // Draws the left/right buttons, and handles
             // Arrow keys going left or right
             ui.horizontal(|ui| {
@@ -330,8 +352,44 @@ fn ui_example(egui_context: Query<&EguiContext>, mut piano: ResMut<PianoRoll>) {
                     piano.bottom_note_index += 12
                 }
 
-                piano.draw_piano_keys(ui /*, sync, selected_instrument*/);
+                piano.draw_piano_keys(ui /*, sync, selected_instrument*/, &output);
             });
         });
     }
+}
+
+fn select_device_ui(
+    mut contexts: EguiContexts,
+    output: Res<MidiOutput>,
+    mut selected_port: ResMut<SelectedOutputPort>,
+) {
+    let context = contexts.ctx_mut();
+    egui::Window::new("Select a MIDI device").show(context, |ui| {
+        let ports = output.ports().iter().enumerate().collect::<Vec<_>>();
+        egui::ComboBox::from_label("Midi Output")
+            .width(200.)
+            .selected_text(format!(
+                "{:?}",
+                selected_port
+                    .0
+                    .clone()
+                    .unwrap_or_else(|| (0, "None".to_string()))
+                    .1
+            ))
+            .show_ui(ui, |ui| {
+                for (index, (port, output_port)) in &ports {
+                    let value = ui.selectable_value(
+                        &mut selected_port.0,
+                        Some((*index, port.to_string())),
+                        port,
+                    );
+                    if value.clicked() {
+                        output.disconnect();
+                        output.connect(output_port.clone());
+                    }
+                    // midi_state.selected_port = Some(index);
+                    //println!("Selecting device {}", &device_name);
+                }
+            });
+    });
 }
