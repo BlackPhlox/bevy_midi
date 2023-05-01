@@ -1,14 +1,21 @@
 use std::{
+    fs,
     iter::{Cycle, Peekable},
     thread::Thread,
 };
 
-use bevy::prelude::*;
+use bevy::{
+    log::{Level, LogPlugin},
+    prelude::*,
+    window::PresentMode,
+};
 use bevy_egui::{
     egui::{self, Color32, ColorImage, ImageButton, Key, TextureHandle, TextureOptions, Ui},
     EguiContext, EguiContexts, EguiPlugin,
 };
 use bevy_midi::prelude::*;
+use midly::{Format, Smf};
+use nodi::{timers::Ticker, Player, Sheet};
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
 //Adapted to bevy_egui from https://github.com/gamercade-io/gamercade_console/blob/audio_editor/gamercade_editor/src/ui/audio/instrument_editor/piano_roll.rs
@@ -16,21 +23,49 @@ use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(
+            DefaultPlugins
+                .set(LogPlugin {
+                    level: Level::WARN,
+                    filter: "bevy_midi=debug".to_string(),
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: (1350., 300.).into(),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .add_plugin(EguiPlugin)
         // Systems that create Egui widgets should be run during the `CoreStage::Update` stage,
         // or after the `EguiSystem::BeginFrame` system (which belongs to the `CoreStage::PreUpdate` stage).
         .add_system(ui_example)
         .init_resource::<PianoRoll>()
+        .init_resource::<SelectedInputPort>()
         .init_resource::<SelectedOutputPort>()
+        .init_resource::<DragFile>()
+        .init_resource::<MidiPlayer>()
         .add_plugin(MidiOutputPlugin)
-        .add_system(select_device_ui)
+        .add_plugin(MidiInputPlugin)
+        .add_system(select_midi_io_ui)
+        .add_system(midi_playback_ui)
+        .add_system(debug)
         //.add_system(play_notes)
         .run();
 }
 
 #[derive(Resource, Default)]
+struct SelectedInputPort(Option<(usize, String)>);
+
+#[derive(Resource, Default)]
 struct SelectedOutputPort(Option<(usize, String)>);
+
+#[derive(Resource, Default)]
+struct MidiPlayer {
+    playing: bool,
+    path: Option<String>,
+}
 
 const BOTTOM_NOTE_INDEX_START: usize = 36;
 const KEYBOARD_KEY_COUNT: usize = 24;
@@ -207,25 +242,17 @@ impl PianoRoll {
                         KEY_RANGE[index % 12],
                         (self.bottom_note_index + index) / 12
                     );
-                    midi_output
-                        .send([0b1001_0000, (self.bottom_note_index + index) as u8, 127].into());
 
-                    midi_output
-                        .send([0b1000_0000, (self.bottom_note_index + index) as u8, 127].into());
                     // Note on, channel 1, max velocity
-                    /*
                     if *next {
-
-                        /*let assigned_channel =
-                        sync.play_note(index + self.bottom_note_index, selected_instrument);*/
-                        //self.key_channels[index] = Some(assigned_channel);
-                    } else if let Some(assigned_channel) = self.key_channels[index] {
-                        //sync.stop_note(assigned_channel);
-                        println!("{}", assigned_channel);
+                        midi_output.send(
+                            [0b1001_0000, (self.bottom_note_index + index) as u8, 127].into(),
+                        );
                     } else {
-                        println!("Err: Released key for an unknown note!")
+                        midi_output.send(
+                            [0b1000_0000, (self.bottom_note_index + index) as u8, 127].into(),
+                        );
                     }
-                    */
                 }
             });
 
@@ -234,9 +261,9 @@ impl PianoRoll {
     }
 
     fn get_key_texture_tint(&self, note: NoteName, index: usize) -> Color32 {
-        const OUT_OF_RANGE: &[Color32; 2] = &[Color32::GRAY, Color32::BLACK];
+        const OUT_OF_RANGE: &[Color32; 2] = &[Color32::LIGHT_GRAY, Color32::BLACK];
         const IN_RANGE: &[Color32; 2] = &[Color32::WHITE, Color32::DARK_GRAY];
-        const ACTIVE: &[Color32; 2] = &[Color32::GREEN, Color32::DARK_GREEN];
+        const ACTIVE: &[Color32; 2] = &[Color32::GREEN, Color32::GREEN];
 
         let color = match note.get_key_color() {
             NoteColor::White => 0,
@@ -273,6 +300,7 @@ impl PianoRoll {
                 )
             })
             .id();
+
         // Draw the actual piano keys for clicking
         ui.vertical(|ui| {
             ui.spacing_mut().item_spacing = bevy_egui::egui::Vec2 {
@@ -310,10 +338,14 @@ impl PianoRoll {
                         let button_bottom =
                             ImageButton::new(texture_id, BOTTOM_KEY_SIZE).tint(tint);
 
-                        if ui.add(button_bottom).clicked() {
+                        let bs = ui.add(button_bottom);
+
+                        if bs.clicked() {
                             //sync.trigger_note(index, selected_instrument);
                             println!("Pressed {}{}", KEY_RANGE[index % 12], index / 12);
                             midi_output.send([0b1001_0000, index as u8, 127].into());
+
+                            //println!("Released {}{}", KEY_RANGE[index % 12], index / 12);
                         };
                     }
                 }
@@ -358,28 +390,194 @@ fn ui_example(
     }
 }
 
-fn select_device_ui(
+fn debug(mut midi: EventReader<MidiData>, output: Res<MidiOutput>) {
+    for data in midi.iter() {
+        let pitch = data.message.msg[1];
+
+        if data.message.is_note_on() {
+            output.send([0b1001_0000, pitch, 127].into());
+        } else if data.message.is_note_off() {
+            output.send([0b1000_0000, pitch, 127].into());
+        } else {
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+struct DragFile {
+    dropped_files: Vec<egui::DroppedFile>,
+    picked_path: Option<String>,
+}
+
+fn midi_playback_ui(
     mut contexts: EguiContexts,
+    mut df: ResMut<DragFile>,
+    mut mp: ResMut<MidiPlayer>,
     output: Res<MidiOutput>,
-    mut selected_port: ResMut<SelectedOutputPort>,
+    mut selected_o_port: ResMut<SelectedOutputPort>,
 ) {
     let context = contexts.ctx_mut();
-    egui::Window::new("Select a MIDI device").show(context, |ui| {
-        let ports = output.ports().iter().enumerate().collect::<Vec<_>>();
-        egui::ComboBox::from_label("Midi Output")
+
+    egui::Window::new("Midi Playback").show(context, |ui| {
+        ui.label("Load a midi file (.mid) to be played");
+
+        if ui.button("Open file…").clicked() {
+            if let Some(path) = rfd::FileDialog::new().pick_file() {
+                df.picked_path = Some(path.display().to_string());
+            }
+        }
+
+        if let Some(picked_path) = &df.picked_path {
+            ui.horizontal(|ui| {
+                ui.label("Playing file:");
+                ui.monospace(picked_path);
+            });
+            if !mp.playing {
+                mp.playing = true;
+
+                let data = fs::read(picked_path).unwrap();
+                let Smf { header, tracks } = Smf::parse(&data).unwrap();
+                let timer = Ticker::try_from(header.timing).unwrap();
+
+                if let Some((id, _)) = selected_o_port.0 {
+                    let midi_out = nodi::midir::MidiOutput::new("play_midi").unwrap();
+                    let out_ports = midi_out.ports();
+
+                    //Cant have two connection to the same output
+                    //output.connect(out_ports[id]);
+
+                    let out_port = &out_ports[id];
+                    let con = midi_out.connect(out_port, "cello-tabs").unwrap();
+
+                    let sheet = match header.format {
+                        Format::SingleTrack | Format::Sequential => Sheet::sequential(&tracks),
+                        Format::Parallel => Sheet::parallel(&tracks),
+                    };
+                    let mut player = Player::new(timer, con);
+                    // thread code
+                    player.play(&sheet);
+                }
+            }
+        }
+
+        // Show dropped files (if any):
+        if !df.dropped_files.is_empty() {
+            ui.group(|ui| {
+                ui.label("Dropped files:");
+
+                for file in &df.dropped_files {
+                    let mut info = if let Some(path) = &file.path {
+                        path.display().to_string()
+                    } else if !file.name.is_empty() {
+                        file.name.clone()
+                    } else {
+                        "???".to_owned()
+                    };
+                    if let Some(bytes) = &file.bytes {
+                        use std::fmt::Write as _;
+                        write!(info, " ({} bytes)", bytes.len()).ok();
+                    }
+                    ui.label(info);
+                }
+            });
+        }
+
+        preview_files_being_dropped(context);
+
+        // Collect dropped files:
+        context.input(|i| {
+            if !i.raw.dropped_files.is_empty() {
+                df.dropped_files = i.raw.dropped_files.clone();
+            }
+        });
+    });
+}
+
+fn preview_files_being_dropped(ctx: &egui::Context) {
+    use egui::*;
+    use std::fmt::Write as _;
+
+    if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
+        let text = ctx.input(|i| {
+            let mut text = "Dropping files:\n".to_owned();
+            for file in &i.raw.hovered_files {
+                if let Some(path) = &file.path {
+                    write!(text, "\n{}", path.display()).ok();
+                } else if !file.mime.is_empty() {
+                    write!(text, "\n{}", file.mime).ok();
+                } else {
+                    text += "\n???";
+                }
+            }
+            text
+        });
+
+        let painter =
+            ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("file_drop_target")));
+
+        let screen_rect = ctx.screen_rect();
+        painter.rect_filled(screen_rect, 0.0, Color32::from_black_alpha(192));
+        painter.text(
+            screen_rect.center(),
+            Align2::CENTER_CENTER,
+            text,
+            TextStyle::Heading.resolve(&ctx.style()),
+            Color32::WHITE,
+        );
+    }
+}
+
+fn select_midi_io_ui(
+    mut contexts: EguiContexts,
+    output: Res<MidiOutput>,
+    input: Res<MidiInput>,
+    mut selected_i_port: ResMut<SelectedInputPort>,
+    mut selected_o_port: ResMut<SelectedOutputPort>,
+) {
+    let context = contexts.ctx_mut();
+
+    egui::Window::new("Select Input & Output MIDI device").show(context, |ui| {
+        let i_ports = input.ports().iter().enumerate().collect::<Vec<_>>();
+        let o_ports = output.ports().iter().enumerate().collect::<Vec<_>>();
+
+        egui::ComboBox::from_label("Midi Input")
             .width(200.)
             .selected_text(format!(
                 "{:?}",
-                selected_port
+                selected_i_port
                     .0
                     .clone()
                     .unwrap_or_else(|| (0, "None".to_string()))
                     .1
             ))
             .show_ui(ui, |ui| {
-                for (index, (port, output_port)) in &ports {
+                for (index, (port, input_port)) in &i_ports {
                     let value = ui.selectable_value(
-                        &mut selected_port.0,
+                        &mut selected_i_port.0,
+                        Some((*index, port.to_string())),
+                        port,
+                    );
+                    if value.clicked() {
+                        input.disconnect();
+                        input.connect(input_port.clone());
+                    }
+                }
+            });
+
+        egui::ComboBox::from_label("Midi Output")
+            .width(200.)
+            .selected_text(format!(
+                "{:?}",
+                selected_o_port
+                    .0
+                    .clone()
+                    .unwrap_or_else(|| (0, "None".to_string()))
+                    .1
+            ))
+            .show_ui(ui, |ui| {
+                for (index, (port, output_port)) in &o_ports {
+                    let value = ui.selectable_value(
+                        &mut selected_o_port.0,
                         Some((*index, port.to_string())),
                         port,
                     );
@@ -387,8 +585,6 @@ fn select_device_ui(
                         output.disconnect();
                         output.connect(output_port.clone());
                     }
-                    // midi_state.selected_port = Some(index);
-                    //println!("Selecting device {}", &device_name);
                 }
             });
     });

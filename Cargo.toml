@@ -29,6 +29,7 @@ bevy_egui = { version = "0.20", features = ["immutable_ctx"]}
 strum = { version = "0.24", features = ["derive"] }
 bevy_mod_picking = "0.12"
 midly = "0.5.2"
+rfd = "0.11"
 
 [dependencies.bevy]
 version = "0.10"
