@@ -14,8 +14,8 @@ impl Plugin for MidiOutputPlugin {
         app.init_resource::<MidiOutputSettings>()
             .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
-            .add_startup_system(setup)
-            .add_system(reply.in_base_set(CoreSet::PreUpdate));
+            .add_systems(Startup, setup)
+            .add_systems(PreUpdate, reply);
     }
 }
 
@@ -98,7 +98,7 @@ impl MidiOutputConnection {
 }
 
 /// The [`Error`] type for midi output operations, accessible as an [`Event`](bevy::ecs::event::Event)
-#[derive(Clone, Debug)]
+#[derive(Event, Clone, Debug)]
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
     SendError(midir::SendError),

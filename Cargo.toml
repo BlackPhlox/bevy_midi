@@ -30,15 +30,15 @@ strum = { version = "0.24", features = ["derive"] }
 bevy_mod_picking = "0.12"
 
 [dependencies.bevy]
-version = "0.10"
+version = "0.11"
 default-features = false
 
 [dev-dependencies.bevy]
-version = "0.10"
+version = "0.11"
 features = ["bevy_core_pipeline","bevy_asset", "bevy_scene", "bevy_render", "bevy_winit", "bevy_gltf", "bevy_ui", "bevy_text"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.10"
+version = "0.11"
 features = ["x11", "wayland"]
 default-features = false

@@ -16,9 +16,9 @@ impl Plugin for MidiInputPlugin {
             .init_resource::<MidiInputConnection>()
             .add_event::<MidiInputError>()
             .add_event::<MidiData>()
-            .add_startup_system(setup)
-            .add_system(reply.in_base_set(CoreSet::PreUpdate))
-            .add_system(debug);
+            .add_systems(Startup, setup)
+            .add_systems(PreUpdate, reply)
+            .add_systems(Update, debug);
     }
 }
 
@@ -106,14 +106,14 @@ impl MidiInputConnection {
 /// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
 ///
 /// This event fires from [`CoreStage::PreUpdate`].
-#[derive(Resource)]
+#[derive(Resource, Event)]
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,
 }
 
 /// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
-#[derive(Clone, Debug)]
+#[derive(Event, Clone, Debug)]
 pub enum MidiInputError {
     ConnectionError(ConnectErrorKind),
     PortRefreshError,
