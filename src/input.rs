@@ -219,9 +219,16 @@ async fn midi_input(
                     &port,
                     settings.port_name,
                     move |stamp, message, _| {
+                        let message_vec: Vec<u8> = message.into();
+                        let mut message_array = [0u8; 3];
+
+                        for (i, &byte) in message_vec.iter().enumerate() {
+                            message_array[i] = byte;
+                        }
+
                         let _ = s.send(Reply::Midi(MidiData {
                             stamp,
-                            message: [message[0], message[1], message[2]].into(),
+                            message: message_array.into(),
                         }));
                     },
                     (),
