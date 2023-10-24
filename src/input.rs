@@ -17,9 +17,9 @@ impl Plugin for MidiInputPlugin {
             .init_resource::<MidiInputConnection>()
             .add_event::<MidiInputError>()
             .add_event::<MidiData>()
-            .add_startup_system(setup)
-            .add_system(reply.in_base_set(CoreSet::PreUpdate))
-            .add_system(debug);
+            .add_systems(Startup, setup)
+            .add_systems(PreUpdate, reply)
+            .add_systems(Update, debug);
     }
 }
 
@@ -113,6 +113,8 @@ pub struct MidiData {
     pub message: MidiMessage,
 }
 
+impl bevy::prelude::Event for MidiData {}
+
 /// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
 #[derive(Clone, Debug)]
 pub enum MidiInputError {
@@ -121,6 +123,7 @@ pub enum MidiInputError {
 }
 
 impl Error for MidiInputError {}
+impl Event for MidiInputError {}
 impl Display for MidiInputError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
