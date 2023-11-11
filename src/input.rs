@@ -183,7 +183,7 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
             input: None,
             connection: None,
         }
-    });
+    }).detach();
 
     commands.insert_resource(MidiInput {
         sender: m_sender,
