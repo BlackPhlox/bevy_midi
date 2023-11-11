@@ -14,8 +14,8 @@ impl Plugin for MidiOutputPlugin {
         app.init_resource::<MidiOutputSettings>()
             .init_resource::<MidiOutputConnection>()
             .add_event::<MidiOutputError>()
-            .add_startup_system(setup)
-            .add_system(reply.in_base_set(CoreSet::PreUpdate));
+            .add_systems(Startup, setup)
+            .add_systems(PreUpdate, reply);
     }
 }
 
@@ -107,6 +107,7 @@ pub enum MidiOutputError {
 }
 
 impl Error for MidiOutputError {}
+impl Event for MidiOutputError {}
 impl Display for MidiOutputError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {

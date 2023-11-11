@@ -30,14 +30,19 @@ fn main() {
         .insert_resource(MidiOutputSettings {
             port_name: "output",
         })
-        .add_plugin(MidiOutputPlugin)
-        .add_system(refresh_ports)
-        .add_system(connect)
-        .add_system(disconnect)
-        .add_system(play_notes)
-        .add_system(show_ports)
-        .add_system(show_connection)
-        .add_startup_system(setup)
+        .add_plugins(MidiOutputPlugin)
+        .add_systems(
+            Update,
+            (
+                refresh_ports,
+                connect,
+                disconnect,
+                play_notes,
+                show_ports,
+                show_connection,
+            ),
+        )
+        .add_systems(Startup, setup)
         .run();
 }
 
