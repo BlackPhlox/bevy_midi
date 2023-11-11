@@ -175,15 +175,17 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
 
     //Got issues with the taskpool rewrite : https://github.com/bevyengine/bevy/pull/10008
     let thread_pool = IoTaskPool::get();
-    thread_pool.spawn({
-        MidiInputTask {
-            receiver: m_receiver,
-            sender: r_sender,
-            settings: settings.clone(),
-            input: None,
-            connection: None,
-        }
-    }).detach();
+    thread_pool
+        .spawn({
+            MidiInputTask {
+                receiver: m_receiver,
+                sender: r_sender,
+                settings: settings.clone(),
+                input: None,
+                connection: None,
+            }
+        })
+        .detach();
 
     commands.insert_resource(MidiInput {
         sender: m_sender,
