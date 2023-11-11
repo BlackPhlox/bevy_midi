@@ -65,7 +65,6 @@ fn setup(
             transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
             ..Default::default()
         },
-	RaycastPickCamera::default(),
     ));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
@@ -121,7 +120,6 @@ fn spawn_note(
             y_reset: pos.y,
         },
         PickableBundle::default(),
-        RaycastPickTarget::default(),
         On::<Pointer<Down>>::target_commands_mut(|_click, entity_commands| {
             entity_commands.insert(PressedKey);
         }),

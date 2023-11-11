@@ -29,6 +29,7 @@ fn main() {
             filter: "bevy_midi=debug".to_string(),
         }))
         .add_plugins(MidiInputPlugin)
+        .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
@@ -40,7 +41,6 @@ fn main() {
                 show_last_message,
             ),
         )
-        .add_systems(Startup, setup)
         .run();
 }
 
@@ -101,7 +101,7 @@ fn show_last_message(
     mut midi_data: EventReader<MidiData>,
     mut instructions: Query<&mut Text, With<Instructions>>,
 ) {
-    for data in midi_data.iter() {
+    for data in midi_data.read() {
         let text_section = &mut instructions.single_mut().sections[3];
         text_section.value = format!(
             "Last Message: {} - {:?}",

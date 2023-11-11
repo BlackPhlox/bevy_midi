@@ -1,5 +1,6 @@
 use super::{MidiMessage, KEY_RANGE};
 use bevy::prelude::Plugin;
+use bevy::tasks::TaskPool;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
@@ -173,16 +174,19 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (m_sender, m_receiver) = crossbeam_channel::unbounded::<Message>();
     let (r_sender, r_receiver) = crossbeam_channel::unbounded::<Reply>();
 
-    let thread_pool = IoTaskPool::get();
-    thread_pool
-        .spawn(MidiInputTask {
-            receiver: m_receiver,
-            sender: r_sender,
-            settings: settings.clone(),
-            input: None,
-            connection: None,
+    //Got issues with the rewrite : https://github.com/bevyengine/bevy/pull/10008
+    let thread_pool = IoTaskPool::get_or_init(|| TaskPool::new());
+    thread_pool.scope(|s|{
+        s.spawn(async {
+            MidiInputTask {
+                receiver: m_receiver,
+                sender: r_sender,
+                settings: settings.clone(),
+                input: None,
+                connection: None,
+            }
         })
-        .detach();
+    });
 
     commands.insert_resource(MidiInput {
         sender: m_sender,
@@ -342,7 +346,7 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
 
 // A system which debug prints note events
 fn debug(mut midi: EventReader<MidiData>) {
-    for data in midi.iter() {
+    for data in midi.read() {
         let pitch = data.message.msg[1];
         let octave = pitch / 12;
         let key = KEY_RANGE[pitch as usize % 12];
