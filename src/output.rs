@@ -137,7 +137,7 @@ fn setup(mut commands: Commands, settings: Res<MidiOutputSettings>) {
     let (r_sender, r_receiver) = crossbeam_channel::unbounded();
 
     //Got issues with the taskpool rewrite : https://github.com/bevyengine/bevy/pull/10008
-    let thread_pool = IoTaskPool::get_or_init(|| TaskPool::new());
+    let thread_pool = IoTaskPool::get_or_init(TaskPool::new);
     thread_pool
         .spawn(MidiOutputTask {
             receiver: m_receiver,
