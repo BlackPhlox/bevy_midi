@@ -146,7 +146,7 @@ fn handle_midi_input(
     mut midi_events: EventReader<MidiData>,
     query: Query<(Entity, &Key)>,
 ) {
-    for data in midi_events.iter() {
+    for data in midi_events.read() {
         let [_, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;

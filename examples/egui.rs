@@ -186,7 +186,7 @@ impl PianoRoll {
     }
 
     fn update_key_states(&mut self, ui: &mut Ui) {
-        let input = ui.input(|i| i.key_pressed(egui::Key::A));
+        let _input = ui.input(|i| i.key_pressed(egui::Key::A));
         let next_keys = std::array::from_fn(|index| ui.input(|i| i.key_down(KEYS[index])));
 
         self.key_states
