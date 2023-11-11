@@ -47,20 +47,20 @@ struct PressedKey;
 
 #[rustfmt::skip]
 fn setup(
-    mut commands: Commands,
+    mut cmds: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     let mid = -6.3;
 
     // light
-    commands.spawn(PointLightBundle {
+    cmds.spawn(PointLightBundle {
         transform: Transform::from_xyz(0.0, 6.0, mid),
         ..Default::default()
     });
 
     //Camera
-    commands.spawn((
+    cmds.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
             ..Default::default()
@@ -81,18 +81,18 @@ fn setup(
     let pos_black = pos + Vec3::new(0., 0.06, 0.);
     
     for i in 0..8 {
-        spawn_note(&mut commands, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
-        spawn_note(&mut commands, &b_mat, 0.15, pos_black, &mut black_key, i, "C#/Db");
-        spawn_note(&mut commands, &w_mat, 0.27, pos, &mut white_key_1, i, "D");
-        spawn_note(&mut commands, &b_mat, 0.39, pos_black, &mut black_key, i, "D#/Eb");
-        spawn_note(&mut commands, &w_mat, 0.54, pos, &mut white_key_2, i, "E");
-        spawn_note(&mut commands, &w_mat, 0.69, pos, &mut white_key_0, i, "F");
-        spawn_note(&mut commands, &b_mat, 0.85, pos_black, &mut black_key, i, "F#/Gb");
-        spawn_note(&mut commands, &w_mat, 0.96, pos, &mut white_key_1, i, "G");
-        spawn_note(&mut commands, &b_mat, 1.08, pos_black, &mut black_key, i, "G#/Ab");
-        spawn_note(&mut commands, &w_mat, 1.19, pos, &mut white_key_1, i, "A");
-        spawn_note(&mut commands, &b_mat, 1.31, pos_black, &mut black_key, i, "A#/Bb");
-        spawn_note(&mut commands, &w_mat, 1.46, pos, &mut white_key_2, i, "B");
+        spawn_note(&mut cmds, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
+        spawn_note(&mut cmds, &b_mat, 0.15, pos_black, &mut black_key, i, "C#/Db");
+        spawn_note(&mut cmds, &w_mat, 0.27, pos, &mut white_key_1, i, "D");
+        spawn_note(&mut cmds, &b_mat, 0.39, pos_black, &mut black_key, i, "D#/Eb");
+        spawn_note(&mut cmds, &w_mat, 0.54, pos, &mut white_key_2, i, "E");
+        spawn_note(&mut cmds, &w_mat, 0.69, pos, &mut white_key_0, i, "F");
+        spawn_note(&mut cmds, &b_mat, 0.85, pos_black, &mut black_key, i, "F#/Gb");
+        spawn_note(&mut cmds, &w_mat, 0.96, pos, &mut white_key_1, i, "G");
+        spawn_note(&mut cmds, &b_mat, 1.08, pos_black, &mut black_key, i, "G#/Ab");
+        spawn_note(&mut cmds, &w_mat, 1.19, pos, &mut white_key_1, i, "A");
+        spawn_note(&mut cmds, &b_mat, 1.31, pos_black, &mut black_key, i, "A#/Bb");
+        spawn_note(&mut cmds, &w_mat, 1.46, pos, &mut white_key_2, i, "B");
     }
 }
 
