@@ -1,6 +1,5 @@
 use super::{MidiMessage, KEY_RANGE};
 use bevy::prelude::Plugin;
-use bevy::tasks::TaskPool;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
@@ -175,7 +174,7 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (r_sender, r_receiver) = crossbeam_channel::unbounded::<Reply>();
 
     //Got issues with the taskpool rewrite : https://github.com/bevyengine/bevy/pull/10008
-    let thread_pool = IoTaskPool::get_or_init(TaskPool::new);
+    let thread_pool = IoTaskPool::get();
     thread_pool.spawn({
         MidiInputTask {
             receiver: m_receiver,
