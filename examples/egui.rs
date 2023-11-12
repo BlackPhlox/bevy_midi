@@ -2,7 +2,10 @@ use std::iter::{Cycle, Peekable};
 
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, Color32, ColorImage, ImageButton, Key, TextureHandle, TextureOptions, Ui},
+    egui::{
+        self, load::SizedTexture, Color32, ColorImage, ImageButton, Key, TextureHandle,
+        TextureOptions, Ui,
+    },
     EguiContext, EguiPlugin,
 };
 use bevy_midi::prelude::*;
@@ -14,10 +17,10 @@ use strum::{EnumCount, EnumIter, IntoEnumIterator};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
+        .add_plugins(EguiPlugin)
         // Systems that create Egui widgets should be run during the `CoreStage::Update` stage,
         // or after the `EguiSystem::BeginFrame` system (which belongs to the `CoreStage::PreUpdate` stage).
-        .add_system(ui_example)
+        .add_systems(Update, ui_example)
         .init_resource::<PianoRoll>()
         .run();
 }
@@ -183,7 +186,7 @@ impl PianoRoll {
     }
 
     fn update_key_states(&mut self, ui: &mut Ui) {
-        let input = ui.input(|i| i.key_pressed(egui::Key::A));
+        let _input = ui.input(|i| i.key_pressed(egui::Key::A));
         let next_keys = std::array::from_fn(|index| ui.input(|i| i.key_down(KEYS[index])));
 
         self.key_states
@@ -214,7 +217,6 @@ impl PianoRoll {
             });
 
         self.key_states = next_keys;
-        drop(input);
     }
 
     fn get_key_texture_tint(&self, note: NoteName, index: usize) -> Color32 {
@@ -257,6 +259,7 @@ impl PianoRoll {
                 )
             })
             .id();
+
         // Draw the actual piano keys for clicking
         ui.vertical(|ui| {
             ui.spacing_mut().item_spacing = bevy_egui::egui::Vec2 {
@@ -271,7 +274,8 @@ impl PianoRoll {
                 all_notes_iter.for_each(|(index, (note, _octave))| {
                     let color = self.get_key_texture_tint(note, index);
 
-                    let button_top = ImageButton::new(texture_id, TOP_KEY_SIZE).tint(color);
+                    let button_top =
+                        ImageButton::new(SizedTexture::new(texture_id, TOP_KEY_SIZE)).tint(color);
                     if ui.add(button_top).clicked() {
                         //sync.trigger_note(index, selected_instrument);
                         println!("Pressed {}{}", KEY_RANGE[index % 12], index / 12);
@@ -291,7 +295,8 @@ impl PianoRoll {
                         let tint = self.get_key_texture_tint(note, index);
 
                         let button_bottom =
-                            ImageButton::new(texture_id, BOTTOM_KEY_SIZE).tint(tint);
+                            ImageButton::new(SizedTexture::new(texture_id, BOTTOM_KEY_SIZE))
+                                .tint(tint);
 
                         if ui.add(button_bottom).clicked() {
                             //sync.trigger_note(index, selected_instrument);

@@ -4,10 +4,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::prelude::*;
-use bevy_mod_picking::{
-    DefaultPickingPlugins, HoverEvent, PickableBundle, PickingCameraBundle, PickingEvent,
-    SelectionEvent,
-};
+use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
@@ -21,17 +18,21 @@ fn main() {
             filter: "bevy_midi=debug".to_string(),
         }))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(MidiInputPlugin)
+        .add_plugins(MidiInputPlugin)
         .init_resource::<MidiInputSettings>()
-        .add_plugin(MidiOutputPlugin)
+        .add_plugins(MidiOutputPlugin)
         .init_resource::<MidiOutputSettings>()
-        .add_startup_system(setup)
-        .add_system(handle_midi_input)
-        .add_system(connect_to_first_input_port)
-        .add_system(connect_to_first_output_port)
-        .add_system(print_events.in_base_set(CoreSet::PostUpdate))
-        .add_system(display_press)
-        .add_system(display_release)
+        .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            (
+                handle_midi_input,
+                connect_to_first_input_port,
+                connect_to_first_output_port,
+                display_press,
+                display_release,
+            ),
+        )
         .run();
 }
 
@@ -41,52 +42,29 @@ struct Key {
     y_reset: f32,
 }
 
-pub fn print_events(
-    mut events: EventReader<PickingEvent>,
-    mut commands: Commands,
-    mouse_button_input: Res<Input<MouseButton>>,
-) {
-    for event in events.iter() {
-        let entity = match event {
-            PickingEvent::Selection(SelectionEvent::JustSelected(e)) => e,
-            PickingEvent::Selection(SelectionEvent::JustDeselected(e)) => e,
-            PickingEvent::Hover(HoverEvent::JustEntered(e)) => e,
-            PickingEvent::Hover(HoverEvent::JustLeft(e)) => e,
-            PickingEvent::Clicked(e) => e,
-        };
-
-        if mouse_button_input.pressed(MouseButton::Left) {
-            commands.entity(*entity).insert(PressedKey);
-        } else {
-            commands.entity(*entity).remove::<PressedKey>();
-        }
-    }
-}
-
 #[derive(Component)]
 struct PressedKey;
 
 #[rustfmt::skip]
 fn setup(
-    mut commands: Commands,
+    mut cmds: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     let mid = -6.3;
 
     // light
-    commands.spawn(PointLightBundle {
+    cmds.spawn(PointLightBundle {
         transform: Transform::from_xyz(0.0, 6.0, mid),
         ..Default::default()
     });
 
     //Camera
-    commands.spawn((
+    cmds.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
             ..Default::default()
         },
-        PickingCameraBundle::default(),
     ));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
@@ -102,18 +80,18 @@ fn setup(
     let pos_black = pos + Vec3::new(0., 0.06, 0.);
     
     for i in 0..8 {
-        spawn_note(&mut commands, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
-        spawn_note(&mut commands, &b_mat, 0.15, pos_black, &mut black_key, i, "C#");
-        spawn_note(&mut commands, &w_mat, 0.27, pos, &mut white_key_1, i, "D");
-        spawn_note(&mut commands, &b_mat, 0.39, pos_black, &mut black_key, i, "D#");
-        spawn_note(&mut commands, &w_mat, 0.54, pos, &mut white_key_2, i, "E");
-        spawn_note(&mut commands, &w_mat, 0.69, pos, &mut white_key_0, i, "F");
-        spawn_note(&mut commands, &b_mat, 0.85, pos_black, &mut black_key, i, "F#");
-        spawn_note(&mut commands, &w_mat, 0.96, pos, &mut white_key_1, i, "G");
-        spawn_note(&mut commands, &b_mat, 1.08, pos_black, &mut black_key, i, "G#");
-        spawn_note(&mut commands, &w_mat, 1.19, pos, &mut white_key_1, i, "A");
-        spawn_note(&mut commands, &b_mat, 1.31, pos_black, &mut black_key, i, "A#");
-        spawn_note(&mut commands, &w_mat, 1.46, pos, &mut white_key_2, i, "B");
+        spawn_note(&mut cmds, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
+        spawn_note(&mut cmds, &b_mat, 0.15, pos_black, &mut black_key, i, "C#/Db");
+        spawn_note(&mut cmds, &w_mat, 0.27, pos, &mut white_key_1, i, "D");
+        spawn_note(&mut cmds, &b_mat, 0.39, pos_black, &mut black_key, i, "D#/Eb");
+        spawn_note(&mut cmds, &w_mat, 0.54, pos, &mut white_key_2, i, "E");
+        spawn_note(&mut cmds, &w_mat, 0.69, pos, &mut white_key_0, i, "F");
+        spawn_note(&mut cmds, &b_mat, 0.85, pos_black, &mut black_key, i, "F#/Gb");
+        spawn_note(&mut cmds, &w_mat, 0.96, pos, &mut white_key_1, i, "G");
+        spawn_note(&mut cmds, &b_mat, 1.08, pos_black, &mut black_key, i, "G#/Ab");
+        spawn_note(&mut cmds, &w_mat, 1.19, pos, &mut white_key_1, i, "A");
+        spawn_note(&mut cmds, &b_mat, 1.31, pos_black, &mut black_key, i, "A#/Bb");
+        spawn_note(&mut cmds, &w_mat, 1.46, pos, &mut white_key_2, i, "B");
     }
 }
 
@@ -142,6 +120,12 @@ fn spawn_note(
             y_reset: pos.y,
         },
         PickableBundle::default(),
+        On::<Pointer<Down>>::target_commands_mut(|_click, entity_commands| {
+            entity_commands.insert(PressedKey);
+        }),
+        On::<Pointer<Up>>::target_commands_mut(|_click, entity_commands| {
+            entity_commands.remove::<PressedKey>();
+        }),
     ));
 }
 
@@ -162,7 +146,7 @@ fn handle_midi_input(
     mut midi_events: EventReader<MidiData>,
     query: Query<(Entity, &Key)>,
 ) {
-    for data in midi_events.iter() {
+    for data in midi_events.read() {
         let [_, index, _value] = data.message.msg;
         let off = index % 12;
         let oct = index.overflowing_div(12).0;

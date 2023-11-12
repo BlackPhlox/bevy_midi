@@ -28,14 +28,19 @@ fn main() {
             level: Level::WARN,
             filter: "bevy_midi=debug".to_string(),
         }))
-        .add_plugin(MidiInputPlugin)
-        .add_system(refresh_ports)
-        .add_system(connect)
-        .add_system(disconnect)
-        .add_system(show_ports)
-        .add_system(show_connection)
-        .add_system(show_last_message)
-        .add_startup_system(setup)
+        .add_plugins(MidiInputPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            (
+                refresh_ports,
+                connect,
+                disconnect,
+                show_ports,
+                show_connection,
+                show_last_message,
+            ),
+        )
         .run();
 }
 
@@ -96,7 +101,7 @@ fn show_last_message(
     mut midi_data: EventReader<MidiData>,
     mut instructions: Query<&mut Text, With<Instructions>>,
 ) {
-    for data in midi_data.iter() {
+    for data in midi_data.read() {
         let text_section = &mut instructions.single_mut().sections[3];
         text_section.value = format!(
             "Last Message: {} - {:?}",
