@@ -173,17 +173,14 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (m_sender, m_receiver) = crossbeam_channel::unbounded::<Message>();
     let (r_sender, r_receiver) = crossbeam_channel::unbounded::<Reply>();
 
-    //Got issues with the taskpool rewrite : https://github.com/bevyengine/bevy/pull/10008
     let thread_pool = IoTaskPool::get();
     thread_pool
-        .spawn({
-            MidiInputTask {
-                receiver: m_receiver,
-                sender: r_sender,
-                settings: settings.clone(),
-                input: None,
-                connection: None,
-            }
+        .spawn(MidiInputTask {
+            receiver: m_receiver,
+            sender: r_sender,
+            settings: settings.clone(),
+            input: None,
+            connection: None,
         })
         .detach();
 
