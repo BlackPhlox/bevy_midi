@@ -1,4 +1,3 @@
-use super::MidiMessage;
 use bevy::prelude::*;
 use bevy::tasks::IoTaskPool;
 use crossbeam_channel::{Receiver, Sender};
@@ -7,6 +6,8 @@ pub use midir::MidiOutputPort;
 use std::fmt::Display;
 use std::{error::Error, future::Future};
 use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
+
+use crate::MidiMessage;
 
 pub struct MidiOutputPlugin;
 
@@ -168,6 +169,9 @@ fn reply(
                 warn!("{}", e);
                 err.send(e);
             }
+	    Reply::IoError(e) => {
+		warn!("{}", e);
+	    }
             Reply::Connected => {
                 conn.connected = true;
             }
@@ -188,6 +192,7 @@ enum Message {
 enum Reply {
     AvailablePorts(Vec<(String, MidiOutputPort)>),
     Error(MidiOutputError),
+    IoError(std::io::Error),
     Connected,
     Disconnected,
 }
@@ -279,9 +284,17 @@ impl Future for MidiOutputTask {
                 },
                 Midi(message) => {
                     if let Some((conn, _)) = &mut self.connection {
-                        if let Err(e) = conn.send(&message.msg) {
-                            self.sender.send(Reply::Error(SendError(e))).unwrap();
-                        }
+                        let mut byte_msg = Vec::with_capacity(4);
+                        match message.write_std(&mut byte_msg) {
+			    Ok(_) => {
+				if let Err(e) = conn.send(&byte_msg) {
+				    self.sender.send(Reply::Error(SendError(e))).unwrap();
+				}
+			    },
+			    Err(write_err) => {
+				self.sender.send(Reply::IoError(write_err)).unwrap();
+			    }
+			}
                     } else {
                         self.sender
                             .send(Reply::Error(SendDisconnectedError(message)))
