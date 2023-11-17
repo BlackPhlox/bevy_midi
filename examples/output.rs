@@ -70,11 +70,19 @@ fn disconnect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
 
 fn play_notes(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
     for (keycode, note) in &KEY_NOTE_MAP {
+        let key: num::u7 = (*note).into();
+        let vel: num::u7 = 127.into();
         if input.just_pressed(*keycode) {
-            output.send([0b1001_0000, *note, 127].into()); // Note on, channel 1, max velocity
+            output.send(LiveEvent::Midi {
+                channel: 0.into(),
+                message: midly::MidiMessage::NoteOn { key, vel },
+            }); // Note on, channel 1, max velocity
         }
         if input.just_released(*keycode) {
-            output.send([0b1000_0000, *note, 127].into()); // Note on, channel 1, max velocity
+            output.send(LiveEvent::Midi {
+                channel: 0.into(),
+                message: midly::MidiMessage::NoteOff { key, vel },
+            }); // Note on, channel 1, max velocity
         }
     }
 }

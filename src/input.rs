@@ -1,10 +1,11 @@
-use crate::MidiMessage;
+use crate::OwnedLiveEvent;
 
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
 pub use midir::{Ignore, MidiInputPort};
+use midly::MidiMessage;
 use midly::stream::MidiStream;
 use std::error::Error;
 use std::fmt::Display;
@@ -112,10 +113,28 @@ impl MidiInputConnection {
 #[derive(Resource)]
 pub struct MidiData {
     pub stamp: u64,
-    pub message: MidiMessage,
+    pub message: OwnedLiveEvent,
 }
 
 impl bevy::prelude::Event for MidiData {}
+
+impl MidiData {
+    /// Return `true` iff the underlying message represents a MIDI note on event.
+    pub fn is_note_on(&self) -> bool {
+	match self.message {
+	    OwnedLiveEvent::Midi { message: MidiMessage::NoteOn { .. }, .. } => true,
+	    _ => false
+	}
+    }
+
+    /// Return `true` iff the underlying message represents a MIDI note off event.
+    pub fn is_note_off(&self) -> bool {
+	match self.message {
+	    OwnedLiveEvent::Midi { message: MidiMessage::NoteOn { .. }, .. } => true,
+	    _ => false
+	}
+    }
+}
 
 /// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
 #[derive(Clone, Debug)]
@@ -248,7 +267,10 @@ impl Future for MidiInputTask {
                         self.settings.port_name,
                         move |stamp, message, _| {
                             stream.feed(message, |live_event| {
-                                let _ = s.send(Reply::Midi(MidiData { stamp, message: live_event.to_static() }));
+                                let _ = s.send(Reply::Midi(MidiData {
+                                    stamp,
+                                    message: live_event.to_static(),
+                                }));
                             });
                         },
                         (),
@@ -289,17 +311,17 @@ impl Future for MidiInputTask {
                         self.sender.send(get_available_ports(&i)).unwrap();
 
                         let s = self.sender.clone();
-			let mut stream = MidiStream::new();
+                        let mut stream = MidiStream::new();
                         let conn = i.connect(
                             &port,
                             self.settings.port_name,
                             move |stamp, message, _| {
-				stream.feed(message, |event| {
+                                stream.feed(message, |event| {
                                     let _ = s.send(Reply::Midi(MidiData {
-					stamp,
-					message: event.to_static()
+                                        stamp,
+                                        message: event.to_static(),
                                     }));
-				})
+                                })
                             },
                             (),
                         );
@@ -348,7 +370,7 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
 // A system which debug prints note events
 fn debug(mut midi: EventReader<MidiData>) {
     for data in midi.read() {
-	debug!("{:?}", data.message);
+        debug!("{:?}", data.message);
         // let pitch = data.message.msg[1];
         // let octave = pitch / 12;
         // let key = KEY_RANGE[pitch as usize % 12];
