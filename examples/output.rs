@@ -70,12 +70,11 @@ fn disconnect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
 
 fn play_notes(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
     for (keycode, note) in &KEY_NOTE_MAP {
-        let key: num::u7 = (*note).into();
         if input.just_pressed(*keycode) {
-            output.send(OwnedLiveEvent::note_on(0, key, 127));
+            output.send(OwnedLiveEvent::note_on(0, *note, 127));
         }
         if input.just_released(*keycode) {
-            output.send(OwnedLiveEvent::note_off(0, key, 127));
+            output.send(OwnedLiveEvent::note_off(0, *note, 127));
         }
     }
 }

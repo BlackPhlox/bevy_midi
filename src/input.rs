@@ -1,4 +1,4 @@
-use crate::OwnedLiveEvent;
+use crate::types::OwnedLiveEvent;
 
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};

@@ -7,7 +7,7 @@ use std::fmt::Display;
 use std::{error::Error, future::Future};
 use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
 
-use crate::OwnedLiveEvent;
+use crate::types::OwnedLiveEvent;
 
 pub struct MidiOutputPlugin;
 
