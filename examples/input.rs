@@ -103,14 +103,14 @@ fn show_last_message(
 ) {
     for data in midi_data.read() {
         let text_section = &mut instructions.single_mut().sections[3];
-        let event_str = match data.message {
-            LiveEvent::Midi { channel, message } => {
+        let event_str = match &data.message {
+            OwnedLiveEvent::Midi { channel, message } => {
                 format!("Channel {channel} - {message:?}")
             }
-            LiveEvent::Common(sc) => {
+            OwnedLiveEvent::Common(sc) => {
                 format!("{:?}", sc)
             }
-            LiveEvent::Realtime(rt) => {
+            OwnedLiveEvent::Realtime(rt) => {
                 format!("{:?}", rt)
             }
         };

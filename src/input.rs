@@ -5,8 +5,8 @@ use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
 pub use midir::{Ignore, MidiInputPort};
-use midly::MidiMessage;
 use midly::stream::MidiStream;
+use midly::MidiMessage;
 use std::error::Error;
 use std::fmt::Display;
 use std::future::Future;
@@ -121,18 +121,24 @@ impl bevy::prelude::Event for MidiData {}
 impl MidiData {
     /// Return `true` iff the underlying message represents a MIDI note on event.
     pub fn is_note_on(&self) -> bool {
-	match self.message {
-	    OwnedLiveEvent::Midi { message: MidiMessage::NoteOn { .. }, .. } => true,
-	    _ => false
-	}
+        match self.message {
+            OwnedLiveEvent::Midi {
+                message: MidiMessage::NoteOn { .. },
+                ..
+            } => true,
+            _ => false,
+        }
     }
 
     /// Return `true` iff the underlying message represents a MIDI note off event.
     pub fn is_note_off(&self) -> bool {
-	match self.message {
-	    OwnedLiveEvent::Midi { message: MidiMessage::NoteOn { .. }, .. } => true,
-	    _ => false
-	}
+        match self.message {
+            OwnedLiveEvent::Midi {
+                message: MidiMessage::NoteOn { .. },
+                ..
+            } => true,
+            _ => false,
+        }
     }
 }
 
@@ -269,7 +275,7 @@ impl Future for MidiInputTask {
                             stream.feed(message, |live_event| {
                                 let _ = s.send(Reply::Midi(MidiData {
                                     stamp,
-                                    message: live_event.to_static(),
+                                    message: live_event.into(),
                                 }));
                             });
                         },
@@ -316,10 +322,10 @@ impl Future for MidiInputTask {
                             &port,
                             self.settings.port_name,
                             move |stamp, message, _| {
-                                stream.feed(message, |event| {
+                                stream.feed(message, |live_event| {
                                     let _ = s.send(Reply::Midi(MidiData {
                                         stamp,
-                                        message: event.to_static(),
+                                        message: live_event.into(),
                                     }));
                                 })
                             },

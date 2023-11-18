@@ -147,30 +147,33 @@ fn handle_midi_input(
     query: Query<(Entity, &Key)>,
 ) {
     for data in midi_events.read() {
-	match data.message {
-	    OwnedLiveEvent::Midi { message: MidiMessage::NoteOn { key, .. }, .. } => {
-		let index: u8 = key.into();
-		let off = index % 12;
-		let oct = index.overflowing_div(12).0;
-		let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
+        match data.message {
+            OwnedLiveEvent::Midi {
+                message: MidiMessage::NoteOn { key, .. },
+                ..
+            } => {
+                let index: u8 = key.into();
+                let off = index % 12;
+                let oct = index.overflowing_div(12).0;
+                let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
 
-		if data.is_note_on() {
-		    for (entity, key) in query.iter() {
-			if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
-			    commands.entity(entity).insert(PressedKey);
-			}
-		    }
-		} else if data.is_note_off() {
-		    for (entity, key) in query.iter() {
-			if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
-			    commands.entity(entity).remove::<PressedKey>();
-			}
-		    }
-		} else {
-		}
-	    },
-	    _ => {}
-	}
+                if data.is_note_on() {
+                    for (entity, key) in query.iter() {
+                        if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
+                            commands.entity(entity).insert(PressedKey);
+                        }
+                    }
+                } else if data.is_note_off() {
+                    for (entity, key) in query.iter() {
+                        if key.key_val.eq(&format!("{}{}", key_str, oct).to_string()) {
+                            commands.entity(entity).remove::<PressedKey>();
+                        }
+                    }
+                } else {
+                }
+            }
+            _ => {}
+        }
     }
 }
 

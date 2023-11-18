@@ -285,7 +285,8 @@ impl Future for MidiOutputTask {
                 Midi(message) => {
                     if let Some((conn, _)) = &mut self.connection {
                         let mut byte_msg = Vec::with_capacity(4);
-                        match message.write_std(&mut byte_msg) {
+                        let live: midly::live::LiveEvent = (&message).into();
+                        match live.write_std(&mut byte_msg) {
                             Ok(_) => {
                                 if let Err(e) = conn.send(&byte_msg) {
                                     self.sender.send(Reply::Error(SendError(e))).unwrap();
