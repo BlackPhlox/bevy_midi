@@ -1,12 +1,13 @@
 //! Module definined owned variants of `[midly]` structures. These owned variants allow for more
 //! ergonomic usage.
+use std::fmt::Debug;
 use midly::live::{LiveEvent, SystemCommon};
-use midly::num;
+use midly::num::{self, u4, u7};
 pub use midly::{
     live::{MtcQuarterFrameMessage, SystemRealtime},
     MidiMessage,
 };
-
+use crate::KEY_RANGE;
 /// Owned version of a [`midly::live::LiveEvent`].
 ///
 /// Standard [`midly::live::LiveEvent`]s have a lifetime parameter limiting them to the scope in
@@ -15,7 +16,7 @@ pub use midly::{
 ///
 /// Creating [`OwnedLiveEvent`]s only allocates when the message is a an [`OwnedSystemCommon`] that
 /// itself contains an allocation.
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum OwnedLiveEvent {
     /// A midi message with a channel and music data.
     Midi {
@@ -82,6 +83,54 @@ impl OwnedLiveEvent {
                 key: key.into(),
                 vel: vel.into(),
             },
+        }
+    }
+}
+
+fn fmt_note(
+    f: &mut std::fmt::Formatter<'_>,
+    msg: &str,
+    ch: &u4,
+    key: &u7,
+    vel: &u7,
+) -> std::fmt::Result {
+    let index: u8 = key.as_int();
+    let off = index % 12;
+    let oct = index.overflowing_div(12).0;
+    let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
+
+    f.write_fmt(format_args!(
+        "Ch: {} {}: {}{:?} Vel: {}",
+        ch, msg, key_str, oct, vel
+    ))
+}
+
+impl Debug for OwnedLiveEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Midi { channel, message } => {
+                {
+                    let _ = match message {
+                        MidiMessage::NoteOff { key, vel } => {
+                            fmt_note(f, "NoteOff", channel, key, vel)
+                        }
+                        MidiMessage::NoteOn { key, vel } => {
+                            fmt_note(f, "NoteOn", channel, key, vel)
+                        }
+                        MidiMessage::Aftertouch { key, vel } => {
+                            fmt_note(f, "Aftertouch", channel, key, vel)
+                        }
+                        _ => f
+                            .debug_struct("Midi")
+                            .field("channel", channel)
+                            .field("message", message)
+                            .finish(),
+                    };
+                };
+                Ok(())
+            }
+            Self::Common(arg) => f.debug_tuple("Common").field(arg).finish(),
+            Self::Realtime(arg) => f.debug_tuple("Realtime").field(arg).finish(),
         }
     }
 }

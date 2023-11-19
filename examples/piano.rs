@@ -149,7 +149,7 @@ fn handle_midi_input(
     for data in midi_events.read() {
         match data.message {
             OwnedLiveEvent::Midi {
-                message: MidiMessage::NoteOn { key, .. },
+                message: MidiMessage::NoteOn { key, .. } | MidiMessage::NoteOff { key, .. },
                 ..
             } => {
                 let index: u8 = key.into();
