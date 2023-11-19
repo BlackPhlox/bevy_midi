@@ -1,13 +1,13 @@
 //! Module definined owned variants of `[midly]` structures. These owned variants allow for more
 //! ergonomic usage.
-use std::fmt::Debug;
+use crate::KEY_RANGE;
 use midly::live::{LiveEvent, SystemCommon};
 use midly::num::{self, u4, u7};
 pub use midly::{
     live::{MtcQuarterFrameMessage, SystemRealtime},
     MidiMessage,
 };
-use crate::KEY_RANGE;
+use std::fmt::Debug;
 /// Owned version of a [`midly::live::LiveEvent`].
 ///
 /// Standard [`midly::live::LiveEvent`]s have a lifetime parameter limiting them to the scope in
