@@ -121,24 +121,24 @@ impl bevy::prelude::Event for MidiData {}
 impl MidiData {
     /// Return `true` iff the underlying message represents a MIDI note on event.
     pub fn is_note_on(&self) -> bool {
-        match self.message {
+        matches!(
+            self.message,
             OwnedLiveEvent::Midi {
                 message: MidiMessage::NoteOn { .. },
                 ..
-            } => true,
-            _ => false,
-        }
+            }
+        )
     }
 
     /// Return `true` iff the underlying message represents a MIDI note off event.
     pub fn is_note_off(&self) -> bool {
-        match self.message {
+        matches!(
+            self.message,
             OwnedLiveEvent::Midi {
-                message: MidiMessage::NoteOn { .. },
+                message: MidiMessage::NoteOff { .. },
                 ..
-            } => true,
-            _ => false,
-        }
+            }
+        )
     }
 }
 

@@ -120,8 +120,8 @@ impl<'a, 'b: 'a> From<&'b OwnedLiveEvent> for LiveEvent<'a> {
                 OwnedSystemCommon::SongPosition(pos) => SystemCommon::SongPosition(*pos),
                 OwnedSystemCommon::SongSelect(ss) => SystemCommon::SongSelect(*ss),
                 OwnedSystemCommon::TuneRequest => SystemCommon::TuneRequest,
-                OwnedSystemCommon::SysEx(b) => SystemCommon::SysEx(&b),
-                OwnedSystemCommon::Undefined(tag, b) => SystemCommon::Undefined(*tag, &b),
+                OwnedSystemCommon::SysEx(b) => SystemCommon::SysEx(b),
+                OwnedSystemCommon::Undefined(tag, b) => SystemCommon::Undefined(*tag, b),
             }),
         }
     }
