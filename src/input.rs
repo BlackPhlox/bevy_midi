@@ -1,9 +1,12 @@
-use super::{MidiMessage, KEY_RANGE};
+use crate::types::OwnedLiveEvent;
+
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
 pub use midir::{Ignore, MidiInputPort};
+use midly::stream::MidiStream;
+use midly::MidiMessage;
 use std::error::Error;
 use std::fmt::Display;
 use std::future::Future;
@@ -110,10 +113,34 @@ impl MidiInputConnection {
 #[derive(Resource)]
 pub struct MidiData {
     pub stamp: u64,
-    pub message: MidiMessage,
+    pub message: OwnedLiveEvent,
 }
 
 impl bevy::prelude::Event for MidiData {}
+
+impl MidiData {
+    /// Return `true` iff the underlying message represents a MIDI note on event.
+    pub fn is_note_on(&self) -> bool {
+        matches!(
+            self.message,
+            OwnedLiveEvent::Midi {
+                message: MidiMessage::NoteOn { .. },
+                ..
+            }
+        )
+    }
+
+    /// Return `true` iff the underlying message represents a MIDI note off event.
+    pub fn is_note_off(&self) -> bool {
+        matches!(
+            self.message,
+            OwnedLiveEvent::Midi {
+                message: MidiMessage::NoteOff { .. },
+                ..
+            }
+        )
+    }
+}
 
 /// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
 #[derive(Clone, Debug)]
@@ -240,14 +267,17 @@ impl Future for MidiInputTask {
                         .input
                         .take()
                         .unwrap_or_else(|| self.connection.take().unwrap().0.close().0);
+                    let mut stream = MidiStream::new();
                     let conn = i.connect(
                         &port,
                         self.settings.port_name,
                         move |stamp, message, _| {
-                            let _ = s.send(Reply::Midi(MidiData {
-                                stamp,
-                                message: [message[0], message[1], message[2]].into(),
-                            }));
+                            stream.feed(message, |live_event| {
+                                let _ = s.send(Reply::Midi(MidiData {
+                                    stamp,
+                                    message: live_event.into(),
+                                }));
+                            });
                         },
                         (),
                     );
@@ -287,14 +317,17 @@ impl Future for MidiInputTask {
                         self.sender.send(get_available_ports(&i)).unwrap();
 
                         let s = self.sender.clone();
+                        let mut stream = MidiStream::new();
                         let conn = i.connect(
                             &port,
                             self.settings.port_name,
                             move |stamp, message, _| {
-                                let _ = s.send(Reply::Midi(MidiData {
-                                    stamp,
-                                    message: [message[0], message[1], message[2]].into(),
-                                }));
+                                stream.feed(message, |live_event| {
+                                    let _ = s.send(Reply::Midi(MidiData {
+                                        stamp,
+                                        message: live_event.into(),
+                                    }));
+                                })
                             },
                             (),
                         );
@@ -343,16 +376,17 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
 // A system which debug prints note events
 fn debug(mut midi: EventReader<MidiData>) {
     for data in midi.read() {
-        let pitch = data.message.msg[1];
-        let octave = pitch / 12;
-        let key = KEY_RANGE[pitch as usize % 12];
+        debug!("{:?}", data.message);
+        // let pitch = data.message.msg[1];
+        // let octave = pitch / 12;
+        // let key = KEY_RANGE[pitch as usize % 12];
 
-        if data.message.is_note_on() {
-            debug!("NoteOn: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
-        } else if data.message.is_note_off() {
-            debug!("NoteOff: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
-        } else {
-            debug!("Other: {:?}", data.message.msg);
-        }
+        // if data.message.is_note_on() {
+        //     debug!("NoteOn: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
+        // } else if data.message.is_note_off() {
+        //     debug!("NoteOff: {}{:?} - Raw: {:?}", key, octave, data.message.msg);
+        // } else {
+        //     debug!("Other: {:?}", data.message.msg);
+        // }
     }
 }

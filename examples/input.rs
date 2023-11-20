@@ -103,17 +103,7 @@ fn show_last_message(
 ) {
     for data in midi_data.read() {
         let text_section = &mut instructions.single_mut().sections[3];
-        text_section.value = format!(
-            "Last Message: {} - {:?}",
-            if data.message.is_note_on() {
-                "NoteOn"
-            } else if data.message.is_note_off() {
-                "NoteOff"
-            } else {
-                "Other"
-            },
-            data.message.msg
-        );
+        text_section.value = format!("Last Message: {:?}", data.message);
     }
 }
 

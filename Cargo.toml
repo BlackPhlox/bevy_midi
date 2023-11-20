@@ -23,6 +23,7 @@ name = "bevy_midi"
 [dependencies]
 midir = "0.9"
 crossbeam-channel = "0.5.8"
+midly = { version = "0.5.3", default-features = false, features = ["std", "alloc"] }
 
 [dev-dependencies]
 bevy_egui = { version = "0.23", features = ["immutable_ctx"]}
