@@ -22,6 +22,7 @@ fn main() {
         .init_resource::<MidiInputSettings>()
         .add_plugins(MidiOutputPlugin)
         .init_resource::<MidiOutputSettings>()
+        .add_state::<ProjectionType>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -31,10 +32,14 @@ fn main() {
                 connect_to_first_output_port,
                 display_press,
                 display_release,
+                swap_camera,
             ),
         )
         .run();
 }
+
+#[derive(Component)]
+struct ProjectionStatus;
 
 #[derive(Component, Debug)]
 struct Key {
@@ -59,12 +64,69 @@ fn setup(
         ..Default::default()
     });
 
-    //Camera
+    //Perspective Camera
     cmds.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
+            camera: Camera{
+                is_active: false,
+                ..Default::default()
+            },
             ..Default::default()
         },
+        PersCamera
+    ));
+
+    // Top-down camera
+    cmds.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(1., 2., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
+            projection: Projection::Orthographic(OrthographicProjection{
+                //scaling_mode: todo!(),
+                scale: 0.011,
+                //area: todo!(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+        OrthCamera
+    ));
+
+        //UI
+    cmds.spawn((
+        TextBundle {
+            text: Text {
+                sections: vec![
+                    TextSection::new(
+                        "Projection:\n",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 30.0,
+                            color: Color::WHITE,
+                        },
+                    ),
+                    TextSection::new(
+                        "Orthographic\n",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 30.0,
+                            color: Color::AQUAMARINE,
+                        },
+                    ),
+                    TextSection::new(
+                        "Press T to switch camera",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 15.0,
+                            color: Color::WHITE,
+                        },
+                    ),
+                ],
+                ..Default::default()
+            },
+            ..default()
+        },
+        ProjectionStatus,
     ));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
@@ -129,9 +191,53 @@ fn spawn_note(
     ));
 }
 
-fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
-    for mut t in &mut query {
-        t.translation.y = -0.05;
+#[derive(States, Default, PartialEq, Eq, Debug, Clone, Copy, Hash)]
+enum ProjectionType {
+    #[default]
+    Orthographic,
+    Perspective,
+}
+
+#[derive(Component)]
+struct OrthCamera;
+
+#[derive(Component)]
+struct PersCamera;
+
+fn swap_camera(
+    keys: Res<Input<KeyCode>>,
+    proj: Res<State<ProjectionType>>,
+    mut proj_txt: Query<&mut Text, With<ProjectionStatus>>,
+    mut nxt_proj: ResMut<NextState<ProjectionType>>,
+    mut q_pers: Query<&mut Camera, (With<PersCamera>, Without<OrthCamera>)>,
+    mut q_orth: Query<&mut Camera, (With<OrthCamera>, Without<PersCamera>)>,
+) {
+    if keys.just_pressed(KeyCode::T) {
+        match (&mut q_pers.get_single_mut(), &mut q_orth.get_single_mut()) {
+            (Ok(pers), Ok(orth)) => {
+                let text_section = &mut proj_txt.single_mut().sections[1];
+                nxt_proj.set(if *proj == ProjectionType::Orthographic {
+                    orth.is_active = false;
+                    pers.is_active = true;
+                    text_section.value = "Perspective\n".to_string();
+                    ProjectionType::Perspective
+                } else {
+                    pers.is_active = false;
+                    orth.is_active = true;
+                    text_section.value = "Orthographic\n".to_string();
+                    ProjectionType::Orthographic
+                });
+            }
+            _ => (),
+        }
+    }
+}
+
+fn display_press(mut query: Query<(&mut Transform, &Key), With<PressedKey>>) {
+    for (mut t, k) in &mut query {
+        if t.translation.y == k.y_reset {
+            t.translation.y += -0.05;
+        }
     }
 }
 
