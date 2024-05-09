@@ -16,6 +16,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(LogPlugin {
             level: Level::WARN,
             filter: "bevy_midi=debug".to_string(),
+            update_subscriber: None,
         }))
         .add_plugins(DefaultPickingPlugins)
         .add_plugins(MidiInputPlugin)
@@ -73,8 +74,8 @@ fn setup(
     let mut white_key_0: Handle<Mesh> = asset_server.load("models/white_key_0.gltf#Mesh0/Primitive0");
     let mut white_key_1: Handle<Mesh> = asset_server.load("models/white_key_1.gltf#Mesh0/Primitive0");
     let mut white_key_2: Handle<Mesh> = asset_server.load("models/white_key_2.gltf#Mesh0/Primitive0");
-    let b_mat = materials.add(Color::rgb(0.1, 0.1, 0.1).into());
-    let w_mat = materials.add(Color::rgb(1.0, 1.0, 1.0).into());
+    let b_mat = materials.add(Color::rgb(0.1, 0.1, 0.1));
+    let w_mat = materials.add(Color::rgb(1.0, 1.0, 1.0));
 
     //Create keyboard layout
     let pos_black = pos + Vec3::new(0., 0.06, 0.);

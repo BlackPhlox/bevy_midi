@@ -2,26 +2,26 @@ use bevy::prelude::*;
 use bevy_midi::prelude::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
-    (KeyCode::Key0, 0),
-    (KeyCode::Key1, 1),
-    (KeyCode::Key2, 2),
-    (KeyCode::Key3, 3),
-    (KeyCode::Key4, 4),
-    (KeyCode::Key5, 5),
-    (KeyCode::Key6, 6),
-    (KeyCode::Key7, 7),
-    (KeyCode::Key8, 8),
-    (KeyCode::Key9, 9),
+    (KeyCode::Digit0, 0),
+    (KeyCode::Digit1, 1),
+    (KeyCode::Digit2, 2),
+    (KeyCode::Digit3, 3),
+    (KeyCode::Digit4, 4),
+    (KeyCode::Digit5, 5),
+    (KeyCode::Digit6, 6),
+    (KeyCode::Digit7, 7),
+    (KeyCode::Digit8, 8),
+    (KeyCode::Digit9, 9),
 ];
 
 const KEY_NOTE_MAP: [(KeyCode, u8); 7] = [
-    (KeyCode::A, 57),
-    (KeyCode::B, 59),
-    (KeyCode::C, 60),
-    (KeyCode::D, 62),
-    (KeyCode::E, 64),
-    (KeyCode::F, 65),
-    (KeyCode::G, 67),
+    (KeyCode::KeyA, 57),
+    (KeyCode::KeyB, 59),
+    (KeyCode::KeyC, 60),
+    (KeyCode::KeyD, 62),
+    (KeyCode::KeyE, 64),
+    (KeyCode::KeyF, 65),
+    (KeyCode::KeyG, 67),
 ];
 
 fn main() {
@@ -46,13 +46,13 @@ fn main() {
         .run();
 }
 
-fn refresh_ports(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
-    if input.just_pressed(KeyCode::R) {
+fn refresh_ports(input: Res<ButtonInput<KeyCode>>, output: Res<MidiOutput>) {
+    if input.just_pressed(KeyCode::KeyR) {
         output.refresh_ports();
     }
 }
 
-fn connect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
+fn connect(input: Res<ButtonInput<KeyCode>>, output: Res<MidiOutput>) {
     for (keycode, index) in &KEY_PORT_MAP {
         if input.just_pressed(*keycode) {
             if let Some((_, port)) = output.ports().get(*index) {
@@ -62,13 +62,13 @@ fn connect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
     }
 }
 
-fn disconnect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
+fn disconnect(input: Res<ButtonInput<KeyCode>>, output: Res<MidiOutput>) {
     if input.just_pressed(KeyCode::Escape) {
         output.disconnect();
     }
 }
 
-fn play_notes(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
+fn play_notes(input: Res<ButtonInput<KeyCode>>, output: Res<MidiOutput>) {
     for (keycode, note) in &KEY_NOTE_MAP {
         if input.just_pressed(*keycode) {
             output.send([0b1001_0000, *note, 127].into()); // Note on, channel 1, max velocity
