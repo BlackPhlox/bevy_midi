@@ -5,16 +5,16 @@ use bevy::{
 use bevy_midi::prelude::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
-    (KeyCode::Key0, 0),
-    (KeyCode::Key1, 1),
-    (KeyCode::Key2, 2),
-    (KeyCode::Key3, 3),
-    (KeyCode::Key4, 4),
-    (KeyCode::Key5, 5),
-    (KeyCode::Key6, 6),
-    (KeyCode::Key7, 7),
-    (KeyCode::Key8, 8),
-    (KeyCode::Key9, 9),
+    (KeyCode::Digit0, 0),
+    (KeyCode::Digit1, 1),
+    (KeyCode::Digit2, 2),
+    (KeyCode::Digit3, 3),
+    (KeyCode::Digit4, 4),
+    (KeyCode::Digit5, 5),
+    (KeyCode::Digit6, 6),
+    (KeyCode::Digit7, 7),
+    (KeyCode::Digit8, 8),
+    (KeyCode::Digit9, 9),
 ];
 
 fn main() {
@@ -27,6 +27,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(LogPlugin {
             level: Level::WARN,
             filter: "bevy_midi=debug".to_string(),
+            update_subscriber: None,
         }))
         .add_plugins(MidiInputPlugin)
         .add_systems(Startup, setup)
@@ -44,13 +45,13 @@ fn main() {
         .run();
 }
 
-fn refresh_ports(keys: Res<Input<KeyCode>>, input: Res<MidiInput>) {
-    if keys.just_pressed(KeyCode::R) {
+fn refresh_ports(keys: Res<ButtonInput<KeyCode>>, input: Res<MidiInput>) {
+    if keys.just_pressed(KeyCode::KeyR) {
         input.refresh_ports();
     }
 }
 
-fn connect(keys: Res<Input<KeyCode>>, input: Res<MidiInput>) {
+fn connect(keys: Res<ButtonInput<KeyCode>>, input: Res<MidiInput>) {
     for (keycode, index) in &KEY_PORT_MAP {
         if keys.just_pressed(*keycode) {
             if let Some((_, port)) = input.ports().get(*index) {
@@ -60,7 +61,7 @@ fn connect(keys: Res<Input<KeyCode>>, input: Res<MidiInput>) {
     }
 }
 
-fn disconnect(keys: Res<Input<KeyCode>>, input: Res<MidiInput>) {
+fn disconnect(keys: Res<ButtonInput<KeyCode>>, input: Res<MidiInput>) {
     if keys.just_pressed(KeyCode::Escape) {
         input.disconnect();
     }

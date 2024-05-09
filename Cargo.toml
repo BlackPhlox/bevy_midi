@@ -21,25 +21,25 @@ exclude = [
 name = "bevy_midi"
 
 [dependencies]
-midir = "0.9"
+midir = "0.10"
 crossbeam-channel = "0.5.8"
 
 [dev-dependencies]
-bevy_egui = { version = "0.23", features = ["immutable_ctx"]}
-strum = { version = "0.25", features = ["derive"] }
-bevy_mod_picking = "0.17"
+bevy_egui = { version = "0.27", features = ["immutable_ctx"]}
+strum = { version = "0.26", features = ["derive"] }
+bevy_mod_picking = "0.18"
 
 [dependencies.bevy]
-version = "0.12"
+version = "0.13"
 default-features = false
 features = ["multi-threaded"]
 
 [dev-dependencies.bevy]
-version = "0.12"
+version = "0.13"
 features = ["bevy_core_pipeline","bevy_asset", "bevy_scene", "bevy_render", "bevy_winit", "bevy_gltf", "bevy_ui", "bevy_text", "zstd", "tonemapping_luts", "ktx2", "hdr"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.12"
+version = "0.13"
 features = ["x11", "wayland"]
 default-features = false
