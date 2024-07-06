@@ -16,7 +16,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(LogPlugin {
             level: Level::WARN,
             filter: "bevy_midi=debug".to_string(),
-            update_subscriber: None,
+            ..default()
         }))
         .add_plugins(DefaultPickingPlugins)
         .add_plugins(MidiInputPlugin)

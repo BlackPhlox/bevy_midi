@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    color::palettes::basic::{GREEN, RED},
+    prelude::*,
+};
 use bevy_midi::prelude::*;
 
 const KEY_PORT_MAP: [(KeyCode, usize); 10] = [
@@ -102,10 +105,10 @@ fn show_connection(
         let text_section = &mut instructions.single_mut().sections[2];
         if connection.is_connected() {
             text_section.value = "Connected".to_string();
-            text_section.style.color = Color::GREEN;
+            text_section.style.color = GREEN.into();
         } else {
             text_section.value = "Disconnected".to_string();
-            text_section.style.color = Color::RED;
+            text_section.style.color = RED.into();
         }
     }
 }
@@ -139,7 +142,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         TextStyle {
                             font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                             font_size: 30.0,
-                            color: Color::RED,
+                            color: RED.into(),
                         },
                     ),
                 ],

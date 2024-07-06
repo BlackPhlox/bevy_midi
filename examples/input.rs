@@ -1,4 +1,5 @@
 use bevy::{
+    color::palettes::basic::{GREEN, RED},
     log::{Level, LogPlugin},
     prelude::*,
 };
@@ -27,7 +28,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(LogPlugin {
             level: Level::WARN,
             filter: "bevy_midi=debug".to_string(),
-            update_subscriber: None,
+            ..default()
         }))
         .add_plugins(MidiInputPlugin)
         .add_systems(Startup, setup)
@@ -90,10 +91,10 @@ fn show_connection(
         let text_section = &mut instructions.single_mut().sections[2];
         if connection.is_connected() {
             text_section.value = "Connected\n".to_string();
-            text_section.style.color = Color::GREEN;
+            text_section.style.color = GREEN.into();
         } else {
             text_section.value = "Disconnected\n".to_string();
-            text_section.style.color = Color::RED;
+            text_section.style.color = RED.into();
         }
     }
 }
@@ -146,7 +147,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         TextStyle {
                             font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                             font_size: 30.0,
-                            color: Color::RED,
+                            color: RED.into(),
                         },
                     ),
                     TextSection::new(

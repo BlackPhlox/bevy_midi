@@ -107,23 +107,20 @@ impl MidiInputConnection {
 /// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
 ///
 /// This event fires from [`CoreStage::PreUpdate`].
-#[derive(Resource)]
+#[derive(Resource, Event)]
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,
 }
 
-impl bevy::prelude::Event for MidiData {}
-
 /// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Event)]
 pub enum MidiInputError {
     ConnectionError(ConnectErrorKind),
     PortRefreshError,
 }
 
 impl Error for MidiInputError {}
-impl Event for MidiInputError {}
 impl Display for MidiInputError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
