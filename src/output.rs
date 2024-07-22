@@ -99,7 +99,7 @@ impl MidiOutputConnection {
 }
 
 /// The [`Error`] type for midi output operations, accessible as an [`Event`](bevy::ecs::event::Event)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Event)]
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
     SendError(midir::SendError),
@@ -108,7 +108,6 @@ pub enum MidiOutputError {
 }
 
 impl Error for MidiOutputError {}
-impl Event for MidiOutputError {}
 impl Display for MidiOutputError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
