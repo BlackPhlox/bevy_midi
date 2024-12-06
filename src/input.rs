@@ -241,6 +241,9 @@ impl Future for MidiInputTask {
                         &port,
                         self.settings.port_name,
                         move |stamp, message, _| {
+                            if message.len() != 3 {
+                                return;
+                            }
                             let _ = s.send(Reply::Midi(MidiData {
                                 stamp,
                                 message: [message[0], message[1], message[2]].into(),
