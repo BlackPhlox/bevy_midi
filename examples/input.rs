@@ -93,7 +93,7 @@ fn show_connection(
     mut instructions: Query<(&mut TextSpan, &mut TextColor), With<ConnectStatus>>,
 ) {
     if connection.is_changed() {
-        let (mut text, mut color) = instructions.single_mut();
+        let (text, color) = &mut instructions.single_mut();
         if connection.is_connected() {
             text.0 = "Connected\n".to_string();
             color.0 = GREEN.into();

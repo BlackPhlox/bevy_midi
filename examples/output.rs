@@ -85,13 +85,15 @@ fn play_notes(input: Res<ButtonInput<KeyCode>>, output: Res<MidiOutput>) {
 #[derive(Component)]
 pub struct Instructions;
 
-fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut Text, With<Instructions>>) {
+#[derive(Component)]
+pub struct ConnectStatus;
+
+fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut TextSpan, With<Instructions>>) {
     if output.is_changed() {
-        let text_section = &mut instructions.single_mut().sections[1];
-        text_section.value = "Available output ports:\n\n".to_string();
+        let text = &mut instructions.single_mut();
+        text.0 = "Available output ports:\n\n".to_string();
         for (i, (name, _)) in output.ports().iter().enumerate() {
-            text_section
-                .value
+            text.0
                 .push_str(format!("Port {:?}: {:?}\n", i, name).as_str());
         }
     }
@@ -99,57 +101,59 @@ fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut Text, With<I
 
 fn show_connection(
     connection: Res<MidiOutputConnection>,
-    mut instructions: Query<&mut Text, With<Instructions>>,
+    mut instructions: Query<(&mut Text, &mut TextColor), With<ConnectStatus>>,
 ) {
     if connection.is_changed() {
-        let text_section = &mut instructions.single_mut().sections[2];
+        let (text, color) = &mut instructions.single_mut();
         if connection.is_connected() {
-            text_section.value = "Connected".to_string();
-            text_section.style.color = GREEN.into();
+            text.0 = "Connected".to_string();
+            color.0 = GREEN.into();
         } else {
-            text_section.value = "Disconnected".to_string();
-            text_section.style.color = RED.into();
+            text.0 = "Disconnected".to_string();
+            color.0 = RED.into();
         }
     }
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
-    commands.spawn((
-        TextBundle {
-            text: Text {
-                sections: vec![
-                    TextSection::new(
-                        "INSTRUCTIONS \n\
+    commands
+        .spawn((
+            Text::default(),
+            TextFont {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 30.0,
+                ..default()
+            },
+            Instructions,
+        ))
+        .with_children(|commands| {
+            commands.spawn((
+                TextSpan::new(
+                    "INSTRUCTIONS \n\
                     R - Refresh ports \n\
-                    A to G - Play note \n\
+                    A to G - Play note\n\
                     0 to 9 - Connect to port \n\
                     Escape - Disconnect from current port \n",
-                        TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 30.0,
-                            color: Color::WHITE,
-                        },
-                    ),
-                    TextSection::from_style(TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 30.0,
-                        color: Color::BLACK,
-                    }),
-                    TextSection::new(
-                        "Disconnected",
-                        TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 30.0,
-                            color: RED.into(),
-                        },
-                    ),
-                ],
-                ..Default::default()
-            },
-            ..default()
-        },
-        Instructions,
-    ));
+                ),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                Instructions,
+            ));
+            commands.spawn((
+                TextSpan::new("Disconnected\n"),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::linear_rgb(1.0, 0., 0.)),
+                ConnectStatus,
+            ));
+        });
 }

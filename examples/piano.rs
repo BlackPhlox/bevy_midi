@@ -4,11 +4,10 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::prelude::*;
-use bevy_mod_picking::prelude::*;
+use bevy_mod_picking::prelude::{DefaultPickingPlugins, *};
 
 fn main() {
     App::new()
-        .insert_resource(Msaa::Sample4)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
@@ -55,17 +54,16 @@ fn setup(
     let mid = -6.3;
 
     // light
-    cmds.spawn(PointLightBundle {
-        transform: Transform::from_xyz(0.0, 6.0, mid),
-        ..Default::default()
-    });
+    cmds.spawn((
+        PointLight::default(),
+        Transform::from_xyz(0.0, 6.0, mid)
+    ));
 
     //Camera
     cmds.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
-            ..Default::default()
-        },
+        Camera3d::default(),
+        Msaa::Sample4,
+        Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y)
     ));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
@@ -79,7 +77,7 @@ fn setup(
 
     //Create keyboard layout
     let pos_black = pos + Vec3::new(0., 0.06, 0.);
-    
+
     for i in 0..8 {
         spawn_note(&mut cmds, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
         spawn_note(&mut cmds, &b_mat, 0.15, pos_black, &mut black_key, i, "C#/Db");
@@ -106,14 +104,11 @@ fn spawn_note(
     key: &str,
 ) {
     commands.spawn((
-        PbrBundle {
-            mesh: asset.clone(),
-            material: mat.clone(),
-            transform: Transform {
-                translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
-                scale: Vec3::new(10., 10., 10.),
-                ..Default::default()
-            },
+        Mesh3d(asset.clone()),
+        MeshMaterial3d(mat.clone()),
+        Transform {
+            translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
+            scale: Vec3::new(10., 10., 10.),
             ..Default::default()
         },
         Key {
