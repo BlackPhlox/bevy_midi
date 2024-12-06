@@ -71,13 +71,18 @@ fn disconnect(keys: Res<ButtonInput<KeyCode>>, input: Res<MidiInput>) {
 #[derive(Component)]
 pub struct Instructions;
 
-fn show_ports(input: Res<MidiInput>, mut instructions: Query<&mut Text, With<Instructions>>) {
+#[derive(Component)]
+pub struct ConnectStatus;
+
+#[derive(Component)]
+pub struct Messages;
+
+fn show_ports(input: Res<MidiInput>, mut instructions: Query<&mut TextSpan, With<Instructions>>) {
     if input.is_changed() {
-        let text_section = &mut instructions.single_mut().sections[1];
-        text_section.value = "Available input ports:\n\n".to_string();
+        let text = &mut instructions.single_mut();
+        text.0 = "Available input ports:\n\n".to_string();
         for (i, (name, _)) in input.ports().iter().enumerate() {
-            text_section
-                .value
+            text.0
                 .push_str(format!("Port {:?}: {:?}\n", i, name).as_str());
         }
     }
@@ -85,27 +90,27 @@ fn show_ports(input: Res<MidiInput>, mut instructions: Query<&mut Text, With<Ins
 
 fn show_connection(
     connection: Res<MidiInputConnection>,
-    mut instructions: Query<&mut Text, With<Instructions>>,
+    mut instructions: Query<(&mut TextSpan, &mut TextColor), With<ConnectStatus>>,
 ) {
     if connection.is_changed() {
-        let text_section = &mut instructions.single_mut().sections[2];
+        let (mut text, mut color) = instructions.single_mut();
         if connection.is_connected() {
-            text_section.value = "Connected\n".to_string();
-            text_section.style.color = GREEN.into();
+            text.0 = "Connected\n".to_string();
+            color.0 = GREEN.into();
         } else {
-            text_section.value = "Disconnected\n".to_string();
-            text_section.style.color = RED.into();
+            text.0 = "Disconnected\n".to_string();
+            color.0 = RED.into();
         }
     }
 }
 
 fn show_last_message(
     mut midi_data: EventReader<MidiData>,
-    mut instructions: Query<&mut Text, With<Instructions>>,
+    mut instructions: Query<&mut TextSpan, With<Messages>>,
 ) {
     for data in midi_data.read() {
-        let text_section = &mut instructions.single_mut().sections[3];
-        text_section.value = format!(
+        let text = &mut instructions.single_mut();
+        text.0 = format!(
             "Last Message: {} - {:?}",
             if data.message.is_note_on() {
                 "NoteOn"
@@ -120,49 +125,54 @@ fn show_last_message(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
-    commands.spawn((
-        TextBundle {
-            text: Text {
-                sections: vec![
-                    TextSection::new(
-                        "INSTRUCTIONS \n\
-                        R - Refresh ports \n\
-                        0 to 9 - Connect to port \n\
-                        Escape - Disconnect from current port \n",
-                        TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 30.0,
-                            color: Color::WHITE,
-                        },
-                    ),
-                    TextSection::from_style(TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 30.0,
-                        color: Color::BLACK,
-                    }),
-                    TextSection::new(
-                        "Disconnected\n",
-                        TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 30.0,
-                            color: RED.into(),
-                        },
-                    ),
-                    TextSection::new(
-                        "Last Message:",
-                        TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 30.0,
-                            color: Color::BLACK,
-                        },
-                    ),
-                ],
-                ..Default::default()
+    commands
+        .spawn((
+            Text::default(),
+            TextFont {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 30.0,
+                ..default()
             },
-            ..default()
-        },
-        Instructions,
-    ));
+            Instructions,
+        ))
+        .with_children(|commands| {
+            commands.spawn((
+                TextSpan::new(
+                    "INSTRUCTIONS \n\
+                                       R - Refresh ports \n\
+                                       0 to 9 - Connect to port \n\
+                                       Escape - Disconnect from current port \n",
+                ),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                Instructions,
+            ));
+            commands.spawn((
+                TextSpan::new("Disconnected\n"),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::linear_rgb(1.0, 0., 0.)),
+                ConnectStatus,
+            ));
+
+            commands.spawn((
+                TextSpan::new("Last Message:"),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::BLACK),
+                Messages,
+            ));
+        });
 }
