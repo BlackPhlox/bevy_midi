@@ -69,7 +69,7 @@ fn disconnect(keys: Res<ButtonInput<KeyCode>>, input: Res<MidiInput>) {
 }
 
 #[derive(Component)]
-pub struct Instructions;
+pub struct InputPorts;
 
 #[derive(Component)]
 pub struct ConnectStatus;
@@ -77,7 +77,7 @@ pub struct ConnectStatus;
 #[derive(Component)]
 pub struct Messages;
 
-fn show_ports(input: Res<MidiInput>, mut instructions: Query<&mut TextSpan, With<Instructions>>) {
+fn show_ports(input: Res<MidiInput>, mut instructions: Query<&mut TextSpan, With<InputPorts>>) {
     if input.is_changed() {
         let text = &mut instructions.single_mut();
         text.0 = "Available input ports:\n\n".to_string();
@@ -135,7 +135,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 font_size: 30.0,
                 ..default()
             },
-            Instructions,
         ))
         .with_children(|commands| {
             commands.spawn((
@@ -151,7 +150,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                Instructions,
+            ));
+            commands.spawn((
+                TextSpan::default(),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                InputPorts,
             ));
             commands.spawn((
                 TextSpan::new("Disconnected\n"),

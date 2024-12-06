@@ -83,12 +83,12 @@ fn play_notes(input: Res<ButtonInput<KeyCode>>, output: Res<MidiOutput>) {
 }
 
 #[derive(Component)]
-pub struct Instructions;
+pub struct OutputPorts;
 
 #[derive(Component)]
 pub struct ConnectStatus;
 
-fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut TextSpan, With<Instructions>>) {
+fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut TextSpan, With<OutputPorts>>) {
     if output.is_changed() {
         let text = &mut instructions.single_mut();
         text.0 = "Available output ports:\n\n".to_string();
@@ -101,7 +101,7 @@ fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut TextSpan, Wi
 
 fn show_connection(
     connection: Res<MidiOutputConnection>,
-    mut instructions: Query<(&mut Text, &mut TextColor), With<ConnectStatus>>,
+    mut instructions: Query<(&mut TextSpan, &mut TextColor), With<ConnectStatus>>,
 ) {
     if connection.is_changed() {
         let (text, color) = &mut instructions.single_mut();
@@ -126,7 +126,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 font_size: 30.0,
                 ..default()
             },
-            Instructions,
         ))
         .with_children(|commands| {
             commands.spawn((
@@ -143,7 +142,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                Instructions,
+            ));
+            commands.spawn((
+                TextSpan::default(),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::BLACK),
+                OutputPorts,
             ));
             commands.spawn((
                 TextSpan::new("Disconnected\n"),
