@@ -1,4 +1,5 @@
 use super::MidiMessage;
+use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
 use bevy::prelude::*;
 use bevy::tasks::IoTaskPool;
 use crossbeam_channel::{Receiver, Sender};
@@ -6,7 +7,6 @@ use midir::ConnectErrorKind;
 pub use midir::MidiOutputPort;
 use std::fmt::Display;
 use std::{error::Error, future::Future};
-use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
 
 pub struct MidiOutputPlugin;
 
@@ -165,7 +165,7 @@ fn reply(
             }
             Reply::Error(e) => {
                 warn!("{}", e);
-                err.send(e);
+                err.write(e);
             }
             Reply::Connected => {
                 conn.connected = true;
