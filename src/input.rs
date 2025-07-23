@@ -246,7 +246,12 @@ impl Future for MidiInputTask {
                             }
                             let _ = s.send(Reply::Midi(MidiData {
                                 stamp,
-                                message: [message[0], message[1], message[2]].into(),
+                                message: [
+                                    message[0],
+                                    message.get(1).cloned().unwrap_or_default(),
+                                    message.get(2).cloned().unwrap_or_default(),
+                                ]
+                                .into(),
                             }));
                         },
                         (),
