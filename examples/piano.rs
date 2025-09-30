@@ -4,7 +4,6 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::prelude::*;
-use bevy_mod_picking::prelude::{DefaultPickingPlugins, *};
 
 fn main() {
     App::new()
@@ -17,7 +16,7 @@ fn main() {
             filter: "bevy_midi=debug".to_string(),
             ..default()
         }))
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(MeshPickingPlugin)
         .add_plugins(MidiInputPlugin)
         .init_resource::<MidiInputSettings>()
         .add_plugins(MidiOutputPlugin)
@@ -103,26 +102,26 @@ fn spawn_note(
     oct: i32,
     key: &str,
 ) {
-    commands.spawn((
-        Mesh3d(asset.clone()),
-        MeshMaterial3d(mat.clone()),
-        Transform {
-            translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
-            scale: Vec3::new(10., 10., 10.),
-            ..Default::default()
-        },
-        Key {
-            key_val: format!("{}{}", key, oct),
-            y_reset: pos.y,
-        },
-        PickableBundle::default(),
-        On::<Pointer<Down>>::target_commands_mut(|_click, entity_commands| {
-            entity_commands.insert(PressedKey);
-        }),
-        On::<Pointer<Up>>::target_commands_mut(|_click, entity_commands| {
-            entity_commands.remove::<PressedKey>();
-        }),
-    ));
+    commands
+        .spawn((
+            Mesh3d(asset.clone()),
+            MeshMaterial3d(mat.clone()),
+            Transform {
+                translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
+                scale: Vec3::new(10., 10., 10.),
+                ..Default::default()
+            },
+            Key {
+                key_val: format!("{}{}", key, oct),
+                y_reset: pos.y,
+            },
+        ))
+        .observe(|click: Trigger<Pointer<Down>>, mut commands: Commands| {
+            commands.entity(click.entity()).insert(PressedKey);
+        })
+        .observe(|release: Trigger<Pointer<Up>>, mut commands: Commands| {
+            commands.entity(release.entity()).remove::<PressedKey>();
+        });
 }
 
 fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {

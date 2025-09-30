@@ -24,7 +24,6 @@ crossbeam-channel = "0.5.8"
 [dev-dependencies]
 bevy_egui = { version = "0.31.1", features = ["immutable_ctx"] }
 strum = { version = "0.26", features = ["derive"] }
-bevy_mod_picking = "0.20"
 
 [dependencies.bevy]
 version = "0.15"
