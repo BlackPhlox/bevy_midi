@@ -143,9 +143,9 @@ fn handle_midi_input(
 ) {
     for data in midi_events.read() {
         let [_, index, _value] = data.message.msg;
-        let off = index % 12;
+        let off = (index % 12) as usize;
         let oct = index.overflowing_div(12).0;
-        let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
+        let key_str = KEY_RANGE[off];
 
         if data.message.is_note_on() {
             for (entity, key) in query.iter() {
@@ -159,14 +159,13 @@ fn handle_midi_input(
                     commands.entity(entity).remove::<PressedKey>();
                 }
             }
-        } else {
         }
     }
 }
 
 fn connect_to_first_input_port(input: Res<MidiInput>) {
     if input.is_changed() {
-        if let Some((_, port)) = input.ports().get(0) {
+        if let Some((_, port)) = input.ports().first() {
             input.connect(port.clone());
         }
     }
@@ -174,7 +173,7 @@ fn connect_to_first_input_port(input: Res<MidiInput>) {
 
 fn connect_to_first_output_port(input: Res<MidiOutput>) {
     if input.is_changed() {
-        if let Some((_, port)) = input.ports().get(0) {
+        if let Some((_, port)) = input.ports().first() {
             input.connect(port.clone());
         }
     }
