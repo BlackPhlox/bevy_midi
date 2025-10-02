@@ -26,12 +26,13 @@ impl From<[u8; 3]> for MidiMessage {
 impl MidiMessage {
     #[must_use]
     pub fn is_note_on(&self) -> bool {
-        (self.msg[0] & 0b1111_0000) == NOTE_ON_STATUS
+        (self.msg[0] & 0b1111_0000) == NOTE_ON_STATUS && self.msg[2] != 0
     }
 
     #[must_use]
     pub fn is_note_off(&self) -> bool {
         (self.msg[0] & 0b1111_0000) == NOTE_OFF_STATUS
+            || ((self.msg[0] & 0b1111_0000) == NOTE_ON_STATUS && self.msg[2] == 0)
     }
 
     /// Get the channel of a message, assuming the message is not a system message.
