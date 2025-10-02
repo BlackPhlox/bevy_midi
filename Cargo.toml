@@ -9,11 +9,8 @@ repository = "https://github.com/BlackPhlox/bevy_midi"
 documentation = "https://docs.rs/bevy_midi"
 description = "Send and receive MIDI data to and from bevy and other programs or controllers."
 keywords = ["gamedev", "bevy", "midi", "encoding", "control"]
-categories = ["game-development", "game-engines", "encoding" ]
-exclude = [
-    ".github/*",
-    "assets/*"
-]
+categories = ["game-development", "game-engines", "encoding"]
+exclude = [".github/*", "assets/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -25,21 +22,19 @@ midir = "0.10"
 crossbeam-channel = "0.5.8"
 
 [dev-dependencies]
-bevy_egui = { version = "0.28", features = ["immutable_ctx"]}
+bevy_egui = { version = "0.31.1", features = ["immutable_ctx"] }
 strum = { version = "0.26", features = ["derive"] }
-bevy_mod_picking = "0.20"
 
 [dependencies.bevy]
-version = "0.14"
+version = "0.15"
 default-features = false
 features = ["multi_threaded"]
 
 [dev-dependencies.bevy]
-version = "0.14"
-features = ["bevy_core_pipeline","bevy_asset", "bevy_scene", "bevy_render", "bevy_winit", "bevy_gltf", "bevy_ui", "bevy_text", "zstd", "tonemapping_luts", "ktx2", "hdr"]
-default-features = false
+version = "0.15"
+default-features = true
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.14"
+version = "0.15"
 features = ["x11", "wayland"]
 default-features = false

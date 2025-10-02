@@ -4,11 +4,9 @@ use bevy::{
     prelude::*,
 };
 use bevy_midi::prelude::*;
-use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(Msaa::Sample4)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
@@ -18,7 +16,7 @@ fn main() {
             filter: "bevy_midi=debug".to_string(),
             ..default()
         }))
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(MeshPickingPlugin)
         .add_plugins(MidiInputPlugin)
         .init_resource::<MidiInputSettings>()
         .add_plugins(MidiOutputPlugin)
@@ -55,17 +53,16 @@ fn setup(
     let mid = -6.3;
 
     // light
-    cmds.spawn(PointLightBundle {
-        transform: Transform::from_xyz(0.0, 6.0, mid),
-        ..Default::default()
-    });
+    cmds.spawn((
+        PointLight::default(),
+        Transform::from_xyz(0.0, 6.0, mid)
+    ));
 
     //Camera
     cmds.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y),
-            ..Default::default()
-        },
+        Camera3d::default(),
+        Msaa::Sample4,
+        Transform::from_xyz(8., 5., mid).looking_at(Vec3::new(0., 0., mid), Vec3::Y)
     ));
 
     let pos: Vec3 = Vec3::new(0., 0., 0.);
@@ -74,12 +71,12 @@ fn setup(
     let mut white_key_0: Handle<Mesh> = asset_server.load("models/white_key_0.gltf#Mesh0/Primitive0");
     let mut white_key_1: Handle<Mesh> = asset_server.load("models/white_key_1.gltf#Mesh0/Primitive0");
     let mut white_key_2: Handle<Mesh> = asset_server.load("models/white_key_2.gltf#Mesh0/Primitive0");
-    let b_mat = materials.add(Color::rgb(0.1, 0.1, 0.1));
-    let w_mat = materials.add(Color::rgb(1.0, 1.0, 1.0));
+    let b_mat = materials.add(Color::srgb(0.1, 0.1, 0.1));
+    let w_mat = materials.add(Color::srgb(1.0, 1.0, 1.0));
 
     //Create keyboard layout
     let pos_black = pos + Vec3::new(0., 0.06, 0.);
-    
+
     for i in 0..8 {
         spawn_note(&mut cmds, &w_mat, 0.00, pos, &mut white_key_0, i, "C");
         spawn_note(&mut cmds, &b_mat, 0.15, pos_black, &mut black_key, i, "C#/Db");
@@ -105,29 +102,26 @@ fn spawn_note(
     oct: i32,
     key: &str,
 ) {
-    commands.spawn((
-        PbrBundle {
-            mesh: asset.clone(),
-            material: mat.clone(),
-            transform: Transform {
+    commands
+        .spawn((
+            Mesh3d(asset.clone()),
+            MeshMaterial3d(mat.clone()),
+            Transform {
                 translation: Vec3::new(pos.x, pos.y, pos.z - offset_z - (1.61 * oct as f32)),
                 scale: Vec3::new(10., 10., 10.),
                 ..Default::default()
             },
-            ..Default::default()
-        },
-        Key {
-            key_val: format!("{}{}", key, oct),
-            y_reset: pos.y,
-        },
-        PickableBundle::default(),
-        On::<Pointer<Down>>::target_commands_mut(|_click, entity_commands| {
-            entity_commands.insert(PressedKey);
-        }),
-        On::<Pointer<Up>>::target_commands_mut(|_click, entity_commands| {
-            entity_commands.remove::<PressedKey>();
-        }),
-    ));
+            Key {
+                key_val: format!("{}{}", key, oct),
+                y_reset: pos.y,
+            },
+        ))
+        .observe(|click: Trigger<Pointer<Down>>, mut commands: Commands| {
+            commands.entity(click.entity()).insert(PressedKey);
+        })
+        .observe(|release: Trigger<Pointer<Up>>, mut commands: Commands| {
+            commands.entity(release.entity()).remove::<PressedKey>();
+        });
 }
 
 fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
@@ -149,9 +143,9 @@ fn handle_midi_input(
 ) {
     for data in midi_events.read() {
         let [_, index, _value] = data.message.msg;
-        let off = index % 12;
+        let off = (index % 12) as usize;
         let oct = index.overflowing_div(12).0;
-        let key_str = KEY_RANGE.iter().nth(off.into()).unwrap();
+        let key_str = KEY_RANGE[off];
 
         if data.message.is_note_on() {
             for (entity, key) in query.iter() {
@@ -165,14 +159,13 @@ fn handle_midi_input(
                     commands.entity(entity).remove::<PressedKey>();
                 }
             }
-        } else {
         }
     }
 }
 
 fn connect_to_first_input_port(input: Res<MidiInput>) {
     if input.is_changed() {
-        if let Some((_, port)) = input.ports().get(0) {
+        if let Some((_, port)) = input.ports().first() {
             input.connect(port.clone());
         }
     }
@@ -180,7 +173,7 @@ fn connect_to_first_input_port(input: Res<MidiInput>) {
 
 fn connect_to_first_output_port(input: Res<MidiOutput>) {
     if input.is_changed() {
-        if let Some((_, port)) = input.ports().get(0) {
+        if let Some((_, port)) = input.ports().first() {
             input.connect(port.clone());
         }
     }
