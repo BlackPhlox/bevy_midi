@@ -2,11 +2,11 @@ use std::iter::{Cycle, Peekable};
 
 use bevy::prelude::*;
 use bevy_egui::{
+    EguiContexts, EguiPlugin, EguiPrimaryContextPass,
     egui::{
-        self, load::SizedTexture, Color32, ColorImage, ImageButton, Key, TextureHandle,
-        TextureOptions, Ui,
+        self, Color32, ColorImage, ImageButton, Key, TextureHandle, TextureOptions, Ui,
+        load::SizedTexture,
     },
-    EguiContext, EguiPlugin,
 };
 use bevy_midi::prelude::*;
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
@@ -17,10 +17,9 @@ use strum::{EnumCount, EnumIter, IntoEnumIterator};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(EguiPlugin)
-        // Systems that create Egui widgets should be run during the `CoreStage::Update` stage,
-        // or after the `EguiSystem::BeginFrame` system (which belongs to the `CoreStage::PreUpdate` stage).
-        .add_systems(Update, ui_example)
+        .add_plugins(EguiPlugin::default())
+        .add_systems(Startup, setup)
+        .add_systems(EguiPrimaryContextPass, ui_example)
         .init_resource::<PianoRoll>()
         .run();
 }
@@ -309,34 +308,36 @@ impl PianoRoll {
     }
 }
 
-fn ui_example(egui_context: Query<&EguiContext>, mut piano: ResMut<PianoRoll>) {
-    if let Ok(ctx) = egui_context.get_single() {
-        egui::Window::new("Virtual Keyboard Piano").show(ctx.get(), |ui| {
-            ui.label(format!(
-                "Octave {}-{}",
-                piano.bottom_note_index / 12 + 1,
-                piano.bottom_note_index / 12 + 2
-            ));
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
 
-            piano.update_key_states(ui);
-            // Draws the left/right buttons, and handles
-            // Arrow keys going left or right
-            ui.horizontal(|ui| {
-                let go_left =
-                    ui.button("<--").clicked() || (ui.input(|i| i.key_pressed(Key::ArrowLeft)));
-                let go_right =
-                    ui.button("-->").clicked() || (ui.input(|i| i.key_pressed(Key::ArrowRight)));
+fn ui_example(mut contexts: EguiContexts, mut piano: ResMut<PianoRoll>) -> Result {
+    egui::Window::new("Virtual Keyboard Piano").show(contexts.ctx_mut()?, |ui| {
+        ui.label(format!(
+            "Octave {}-{}",
+            piano.bottom_note_index / 12 + 1,
+            piano.bottom_note_index / 12 + 2
+        ));
 
-                if go_left && piano.bottom_note_index > 0 {
-                    piano.bottom_note_index -= 12
-                } else if go_right
-                    && piano.bottom_note_index < TOTAL_NOTES_COUNT - KEYBOARD_KEY_COUNT
-                {
-                    piano.bottom_note_index += 12
-                }
+        piano.update_key_states(ui);
+        // Draws the left/right buttons, and handles
+        // Arrow keys going left or right
+        ui.horizontal(|ui| {
+            let go_left =
+                ui.button("<--").clicked() || (ui.input(|i| i.key_pressed(Key::ArrowLeft)));
+            let go_right =
+                ui.button("-->").clicked() || (ui.input(|i| i.key_pressed(Key::ArrowRight)));
 
-                piano.draw_piano_keys(ui /*, sync, selected_instrument*/);
-            });
+            if go_left && piano.bottom_note_index > 0 {
+                piano.bottom_note_index -= 12
+            } else if go_right && piano.bottom_note_index < TOTAL_NOTES_COUNT - KEYBOARD_KEY_COUNT {
+                piano.bottom_note_index += 12
+            }
+
+            piano.draw_piano_keys(ui /*, sync, selected_instrument*/);
         });
-    }
+    });
+
+    Ok(())
 }
