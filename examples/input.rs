@@ -77,23 +77,27 @@ pub struct ConnectStatus;
 #[derive(Component)]
 pub struct Messages;
 
-fn show_ports(input: Res<MidiInput>, mut instructions: Query<&mut TextSpan, With<InputPorts>>) {
+fn show_ports(
+    input: Res<MidiInput>,
+    mut instructions: Query<&mut TextSpan, With<InputPorts>>,
+) -> Result {
     if input.is_changed() {
-        let text = &mut instructions.single_mut();
+        let text = &mut instructions.single_mut()?;
         text.0 = "Available input ports:\n\n".to_string();
         for (i, (name, _)) in input.ports().iter().enumerate() {
             text.0
                 .push_str(format!("Port {:?}: {:?}\n", i, name).as_str());
         }
     }
+    Ok(())
 }
 
 fn show_connection(
     connection: Res<MidiInputConnection>,
     mut instructions: Query<(&mut TextSpan, &mut TextColor), With<ConnectStatus>>,
-) {
+) -> Result {
     if connection.is_changed() {
-        let (text, color) = &mut instructions.single_mut();
+        let (text, color) = &mut instructions.single_mut()?;
         if connection.is_connected() {
             text.0 = "Connected\n".to_string();
             color.0 = GREEN.into();
@@ -102,14 +106,15 @@ fn show_connection(
             color.0 = RED.into();
         }
     }
+    Ok(())
 }
 
 fn show_last_message(
     mut midi_data: EventReader<MidiData>,
     mut instructions: Query<&mut TextSpan, With<Messages>>,
-) {
+) -> Result {
     for data in midi_data.read() {
-        let text = &mut instructions.single_mut();
+        let text = &mut instructions.single_mut()?;
         text.0 = format!(
             "Last Message: {} - {:?}",
             if data.message.is_note_on() {
@@ -122,6 +127,7 @@ fn show_last_message(
             data.message.msg
         );
     }
+    Ok(())
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
