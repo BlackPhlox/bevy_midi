@@ -22,7 +22,7 @@ midir = "0.10"
 crossbeam-channel = "0.5.8"
 
 [dev-dependencies]
-bevy_egui = { version = "0.31.1", features = ["immutable_ctx"] }
+bevy_egui = { version = "0.36", features = ["immutable_ctx"] }
 strum = { version = "0.26", features = ["derive"] }
 
 [dependencies.bevy]
