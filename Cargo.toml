@@ -36,6 +36,7 @@ features = [
     "bevy_asset",
     "bevy_core_pipeline",
     "bevy_gltf",
+    "bevy_picking",
     "bevy_render",
     "bevy_scene",
     "bevy_text",

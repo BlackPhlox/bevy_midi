@@ -10,6 +10,7 @@ fn main() {
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
+            ..default()
         })
         .add_plugins(DefaultPlugins.set(LogPlugin {
             level: Level::WARN,
@@ -116,12 +117,14 @@ fn spawn_note(
                 y_reset: pos.y,
             },
         ))
-        .observe(|click: Trigger<Pointer<Down>>, mut commands: Commands| {
-            commands.entity(click.entity()).insert(PressedKey);
+        .observe(|click: Trigger<Pointer<Pressed>>, mut commands: Commands| {
+            commands.entity(click.target()).insert(PressedKey);
         })
-        .observe(|release: Trigger<Pointer<Up>>, mut commands: Commands| {
-            commands.entity(release.entity()).remove::<PressedKey>();
-        });
+        .observe(
+            |release: Trigger<Pointer<Released>>, mut commands: Commands| {
+                commands.entity(release.target()).remove::<PressedKey>();
+            },
+        );
 }
 
 fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
