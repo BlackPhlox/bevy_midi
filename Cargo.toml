@@ -32,7 +32,20 @@ features = ["multi_threaded", "bevy_log"]
 
 [dev-dependencies.bevy]
 version = "0.16"
-features = ["bevy_core_pipeline","bevy_asset", "bevy_scene", "bevy_render", "bevy_winit", "bevy_gltf", "bevy_ui", "bevy_text", "zstd", "tonemapping_luts", "ktx2", "hdr"]
+features = [
+    "bevy_asset",
+    "bevy_core_pipeline",
+    "bevy_gltf",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_winit",
+    "hdr",
+    "ktx2",
+    "tonemapping_luts",
+    "zstd"
+]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
