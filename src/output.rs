@@ -1,10 +1,10 @@
 use super::MidiMessage;
+use crate::safe_wrappers::MidiOutputPort;
 use MidiOutputError::{ConnectionError, PortRefreshError, SendDisconnectedError, SendError};
 use bevy::prelude::*;
 use bevy::tasks::IoTaskPool;
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind;
-pub use midir::MidiOutputPort;
 use std::fmt::Display;
 use std::{error::Error, future::Future};
 
@@ -225,6 +225,7 @@ impl Future for MidiOutputTask {
                         .output
                         .take()
                         .unwrap_or_else(|| self.connection.take().unwrap().0.close());
+
                     match out.connect(&port, self.settings.port_name) {
                         Ok(conn) => {
                             self.connection = Some((conn, port));
@@ -305,7 +306,7 @@ fn get_available_ports(output: &midir::MidiOutput) -> Reply {
         let ports = output.ports();
         let ports: Result<Vec<_>, _> = ports
             .into_iter()
-            .map(|p| output.port_name(&p).map(|n| (n, p)))
+            .map(|p| output.port_name(&p).map(|n| (n, MidiOutputPort::new(p))))
             .collect();
         if let Ok(ports) = ports {
             return Reply::AvailablePorts(ports);

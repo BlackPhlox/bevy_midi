@@ -1,13 +1,22 @@
 use super::{KEY_RANGE, MidiMessage};
+use crate::safe_wrappers::MidiInputPort;
 use MidiInputError::{ConnectionError, PortRefreshError};
 use bevy::prelude::Plugin;
-use bevy::{prelude::*, tasks::IoTaskPool};
+use bevy::prelude::*;
 use crossbeam_channel::{Receiver, Sender};
 use midir::ConnectErrorKind; // XXX: do we expose this?
-pub use midir::{Ignore, MidiInputPort};
+pub use midir::Ignore;
 use std::error::Error;
 use std::fmt::Display;
+
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::tasks::IoTaskPool;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::future::Future;
+
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures;
 
 pub struct MidiInputPlugin;
 
@@ -170,16 +179,24 @@ fn setup(mut commands: Commands, settings: Res<MidiInputSettings>) {
     let (m_sender, m_receiver) = crossbeam_channel::unbounded::<Message>();
     let (r_sender, r_receiver) = crossbeam_channel::unbounded::<Reply>();
 
-    let thread_pool = IoTaskPool::get();
-    thread_pool
-        .spawn(MidiInputTask {
-            receiver: m_receiver,
-            sender: r_sender,
-            settings: settings.clone(),
-            input: None,
-            connection: None,
-        })
-        .detach();
+    let settings_clone = settings.clone();
+
+    let task = MidiInputTask {
+        receiver: m_receiver,
+        sender: r_sender,
+        settings: settings_clone,
+        input: None,
+        connection: None,
+    };
+
+    // Platform-specific task spawning
+    #[cfg(not(target_arch = "wasm32"))]
+    IoTaskPool::get().spawn(task).detach();
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_futures::spawn_local(async move {
+        task.run_wasm().await;
+    });
 
     commands.insert_resource(MidiInput {
         sender: m_sender,
@@ -212,6 +229,172 @@ struct MidiInputTask {
     connection: Option<(midir::MidiInputConnection<()>, MidiInputPort)>,
 }
 
+impl MidiInputTask {
+    /// Handle connecting to a MIDI port (shared between native and WASM)
+    fn handle_connect_to_port(&mut self, port: MidiInputPort) -> Vec<Reply> {
+        let mut replies = Vec::new();
+        let was_connected = self.input.is_none();
+        let s = self.sender.clone();
+        let i = self
+            .input
+            .take()
+            .unwrap_or_else(|| self.connection.take().unwrap().0.close().0);
+
+        // Connect to the port (same API on all platforms)
+        let conn = i.connect(
+            &port,
+            self.settings.port_name,
+            move |stamp, message, _| {
+                if message.len() != 3 {
+                    return;
+                }
+                let _ = s.send(Reply::Midi(MidiData {
+                    stamp,
+                    message: [
+                        message[0],
+                        message.get(1).cloned().unwrap_or_default(),
+                        message.get(2).cloned().unwrap_or_default(),
+                    ]
+                    .into(),
+                }));
+            },
+            (),
+        );
+
+        match conn {
+            Ok(conn) => {
+                replies.push(Reply::Connected);
+                self.connection = Some((conn, port));
+                self.input = None;
+            }
+            Err(conn_err) => {
+                replies.push(Reply::Error(ConnectionError(conn_err.kind())));
+                if was_connected {
+                    replies.push(Reply::Disconnected);
+                }
+                self.connection = None;
+                self.input = Some(conn_err.into_inner());
+            }
+        }
+        replies
+    }
+
+    /// Handle disconnecting from current MIDI port (shared between native and WASM)
+    fn handle_disconnect_from_port(&mut self) -> Vec<Reply> {
+        if let Some((conn, _)) = self.connection.take() {
+            self.input = Some(conn.close().0);
+            self.connection = None;
+            vec![Reply::Disconnected]
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// Handle refreshing MIDI ports (shared between native and WASM)
+    fn handle_refresh_ports(&mut self) -> Vec<Reply> {
+        match &self.input {
+            Some(i) => vec![get_available_ports(i)],
+            None => {
+                if let Some((conn, port)) = self.connection.take() {
+                    let i = conn.close().0;
+                    let mut replies = vec![get_available_ports(&i)];
+
+                    let s = self.sender.clone();
+
+                    // Reconnect to the port (same API on all platforms)
+                    let conn = i.connect(
+                        &port,
+                        self.settings.port_name,
+                        move |stamp, message, _| {
+                            let _ = s.send(Reply::Midi(MidiData {
+                                stamp,
+                                message: [message[0], message[1], message[2]].into(),
+                            }));
+                        },
+                        (),
+                    );
+
+                    match conn {
+                        Ok(conn) => {
+                            self.connection = Some((conn, port));
+                            self.input = None;
+                        }
+                        Err(conn_err) => {
+                            replies.push(Reply::Error(ConnectionError(conn_err.kind())));
+                            replies.push(Reply::Disconnected);
+                            self.connection = None;
+                            self.input = Some(conn_err.into_inner());
+                        }
+                    }
+                    replies
+                } else {
+                    Vec::new()
+                }
+            }
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn run_wasm(mut self) {
+        // Initialize the input if not already done
+        if self.input.is_none() && self.connection.is_none() {
+            self.input = midir::MidiInput::new(self.settings.client_name).ok();
+            if let Some(ref input) = self.input {
+                info!("MIDI input initialized for WASM");
+                let _ = self.sender.send(get_available_ports(input));
+            } else {
+                warn!("Failed to create MIDI input");
+            }
+        }
+
+        // Main message processing loop for WASM
+        loop {
+            // Process messages non-blockingly
+            while let Ok(msg) = self.receiver.try_recv() {
+                self.handle_message(msg).await;
+            }
+
+            // Use requestAnimationFrame to yield control properly to the browser
+            // This is much better than tight loops or immediate promises
+            self.next_animation_frame().await;
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn next_animation_frame(&self) {
+        use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
+
+        let promise = js_sys::Promise::new(&mut |resolve, _| {
+            let window = web_sys::window().unwrap();
+            let closure = Closure::once(move || {
+                resolve.call0(&JsValue::UNDEFINED).unwrap();
+            });
+            window
+                .request_animation_frame(closure.as_ref().unchecked_ref())
+                .unwrap();
+            closure.forget();
+        });
+        wasm_bindgen_futures::JsFuture::from(promise).await.ok();
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn handle_message(&mut self, msg: Message) {
+        use Message::{ConnectToPort, DisconnectFromPort, RefreshPorts};
+
+        let replies = match msg {
+            ConnectToPort(port) => self.handle_connect_to_port(port),
+            DisconnectFromPort => self.handle_disconnect_from_port(),
+            RefreshPorts => self.handle_refresh_ports(),
+        };
+
+        for reply in replies {
+            let _ = self.sender.send(reply);
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 impl Future for MidiInputTask {
     type Output = ();
 
@@ -229,91 +412,14 @@ impl Future for MidiInputTask {
         if let Ok(msg) = self.receiver.recv() {
             use Message::{ConnectToPort, DisconnectFromPort, RefreshPorts};
 
-            match msg {
-                ConnectToPort(port) => {
-                    let was_connected = self.input.is_none();
-                    let s = self.sender.clone();
-                    let i = self
-                        .input
-                        .take()
-                        .unwrap_or_else(|| self.connection.take().unwrap().0.close().0);
-                    let conn = i.connect(
-                        &port,
-                        self.settings.port_name,
-                        move |stamp, message, _| {
-                            if message.len() != 3 {
-                                return;
-                            }
-                            let _ = s.send(Reply::Midi(MidiData {
-                                stamp,
-                                message: [message[0], message[1], message[2]].into(),
-                            }));
-                        },
-                        (),
-                    );
-                    match conn {
-                        Ok(conn) => {
-                            self.sender.send(Reply::Connected).unwrap();
-                            self.connection = Some((conn, port));
-                            self.input = None;
-                        }
-                        Err(conn_err) => {
-                            self.sender
-                                .send(Reply::Error(ConnectionError(conn_err.kind())))
-                                .unwrap();
-                            if was_connected {
-                                self.sender.send(Reply::Disconnected).unwrap();
-                            }
-                            self.connection = None;
-                            self.input = Some(conn_err.into_inner());
-                        }
-                    }
-                }
-                DisconnectFromPort => {
-                    if let Some((conn, _)) = self.connection.take() {
-                        self.input = Some(conn.close().0);
-                        self.connection = None;
-                        self.sender.send(Reply::Disconnected).unwrap();
-                    }
-                }
-                RefreshPorts => match &self.input {
-                    Some(i) => {
-                        self.sender.send(get_available_ports(i)).unwrap();
-                    }
-                    None => {
-                        let (conn, port) = self.connection.take().unwrap();
-                        let i = conn.close().0;
+            let replies = match msg {
+                ConnectToPort(port) => self.handle_connect_to_port(port),
+                DisconnectFromPort => self.handle_disconnect_from_port(),
+                RefreshPorts => self.handle_refresh_ports(),
+            };
 
-                        self.sender.send(get_available_ports(&i)).unwrap();
-
-                        let s = self.sender.clone();
-                        let conn = i.connect(
-                            &port,
-                            self.settings.port_name,
-                            move |stamp, message, _| {
-                                let _ = s.send(Reply::Midi(MidiData {
-                                    stamp,
-                                    message: [message[0], message[1], message[2]].into(),
-                                }));
-                            },
-                            (),
-                        );
-                        match conn {
-                            Ok(conn) => {
-                                self.connection = Some((conn, port));
-                                self.input = None;
-                            }
-                            Err(conn_err) => {
-                                self.sender
-                                    .send(Reply::Error(ConnectionError(conn_err.kind())))
-                                    .unwrap();
-                                self.sender.send(Reply::Disconnected).unwrap();
-                                self.connection = None;
-                                self.input = Some(conn_err.into_inner());
-                            }
-                        }
-                    }
-                },
+            for reply in replies {
+                self.sender.send(reply).unwrap();
             }
         }
         cx.waker().wake_by_ref();
@@ -331,7 +437,7 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
         let ports = input.ports();
         let ports: Result<Vec<_>, _> = ports
             .into_iter()
-            .map(|p| input.port_name(&p).map(|n| (n, p)))
+            .map(|p| input.port_name(&p).map(|n| (n, MidiInputPort::new(p))))
             .collect();
         if let Ok(ports) = ports {
             return Reply::AvailablePorts(ports);
