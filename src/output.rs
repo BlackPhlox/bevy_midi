@@ -14,7 +14,7 @@ impl Plugin for MidiOutputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MidiOutputSettings>()
             .init_resource::<MidiOutputConnection>()
-            .add_event::<MidiOutputError>()
+            .add_message::<MidiOutputError>()
             .add_systems(Startup, setup)
             .add_systems(PreUpdate, reply);
     }
@@ -98,8 +98,8 @@ impl MidiOutputConnection {
     }
 }
 
-/// The [`Error`] type for midi output operations, accessible as an [`Event`](bevy::ecs::event::Event)
-#[derive(Clone, Debug, Event)]
+/// The [`Error`] type for midi output operations, accessible as a [`Message`](bevy::ecs::message::Message)
+#[derive(Clone, Debug, Message)]
 pub enum MidiOutputError {
     ConnectionError(ConnectErrorKind),
     SendError(midir::SendError),
@@ -156,7 +156,7 @@ fn setup(mut commands: Commands, settings: Res<MidiOutputSettings>) {
 fn reply(
     mut output: ResMut<MidiOutput>,
     mut conn: ResMut<MidiOutputConnection>,
-    mut err: EventWriter<MidiOutputError>,
+    mut err: MessageWriter<MidiOutputError>,
 ) {
     while let Ok(msg) = output.receiver.try_recv() {
         match msg {

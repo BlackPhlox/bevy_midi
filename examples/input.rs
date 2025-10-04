@@ -110,7 +110,7 @@ fn show_connection(
 }
 
 fn show_last_message(
-    mut midi_data: EventReader<MidiData>,
+    mut midi_data: MessageReader<MidiData>,
     mut instructions: Query<&mut TextSpan, With<Messages>>,
 ) -> Result {
     for data in midi_data.read() {

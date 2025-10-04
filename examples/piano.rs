@@ -1,6 +1,5 @@
 use bevy::{
     log::{Level, LogPlugin},
-    pbr::AmbientLight,
     prelude::*,
 };
 use bevy_midi::prelude::*;
@@ -117,14 +116,14 @@ fn spawn_note(
                 y_reset: pos.y,
             },
         ))
-        .observe(|click: Trigger<Pointer<Pressed>>, mut commands: Commands| {
-            commands.entity(click.target()).insert(PressedKey);
+        .observe(|click: On<Pointer<Press>>, mut commands: Commands| {
+            commands.entity(click.event().entity).insert(PressedKey);
         })
-        .observe(
-            |release: Trigger<Pointer<Released>>, mut commands: Commands| {
-                commands.entity(release.target()).remove::<PressedKey>();
-            },
-        );
+        .observe(|release: On<Pointer<Release>>, mut commands: Commands| {
+            commands
+                .entity(release.event().entity)
+                .remove::<PressedKey>();
+        });
 }
 
 fn display_press(mut query: Query<&mut Transform, With<PressedKey>>) {
@@ -141,7 +140,7 @@ fn display_release(mut query: Query<(&mut Transform, &Key), Without<PressedKey>>
 
 fn handle_midi_input(
     mut commands: Commands,
-    mut midi_events: EventReader<MidiData>,
+    mut midi_events: MessageReader<MidiData>,
     query: Query<(Entity, &Key)>,
 ) {
     for data in midi_events.read() {

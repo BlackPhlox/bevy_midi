@@ -15,8 +15,8 @@ impl Plugin for MidiInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MidiInputSettings>()
             .init_resource::<MidiInputConnection>()
-            .add_event::<MidiInputError>()
-            .add_event::<MidiData>()
+            .add_message::<MidiInputError>()
+            .add_message::<MidiData>()
             .add_systems(Startup, setup)
             .add_systems(PreUpdate, reply)
             .add_systems(Update, debug);
@@ -104,17 +104,17 @@ impl MidiInputConnection {
     }
 }
 
-/// An [`Event`](bevy::ecs::event::Event) for incoming midi data.
+/// A [`Message`](bevy::ecs::message::Message) for incoming midi data.
 ///
 /// This event fires from [`CoreStage::PreUpdate`].
-#[derive(Resource, Event)]
+#[derive(Resource, Message)]
 pub struct MidiData {
     pub stamp: u64,
     pub message: MidiMessage,
 }
 
-/// The [`Error`] type for midi input operations, accessible as an [`Event`](bevy::ecs::event::Event).
-#[derive(Clone, Debug, Event)]
+/// The [`Error`] type for midi input operations, accessible as a [`Message`](bevy::ecs::message::Message).
+#[derive(Clone, Debug, Message)]
 pub enum MidiInputError {
     ConnectionError(ConnectErrorKind),
     PortRefreshError,
@@ -141,8 +141,8 @@ impl Display for MidiInputError {
 fn reply(
     mut input: ResMut<MidiInput>,
     mut conn: ResMut<MidiInputConnection>,
-    mut err: EventWriter<MidiInputError>,
-    mut midi: EventWriter<MidiData>,
+    mut err: MessageWriter<MidiInputError>,
+    mut midi: MessageWriter<MidiData>,
 ) {
     while let Ok(msg) = input.receiver.try_recv() {
         match msg {
@@ -340,8 +340,8 @@ fn get_available_ports(input: &midir::MidiInput) -> Reply {
     Reply::Error(PortRefreshError)
 }
 
-// A system which debug prints note events
-fn debug(mut midi: EventReader<MidiData>) {
+// A system which debug prints note messages
+fn debug(mut midi: MessageReader<MidiData>) {
     for data in midi.read() {
         let pitch = data.message.msg[1];
         let octave = pitch / 12;
