@@ -1,4 +1,5 @@
-use super::{MidiMessage, KEY_RANGE};
+use super::{KEY_RANGE, MidiMessage};
+use MidiInputError::{ConnectionError, PortRefreshError};
 use bevy::prelude::Plugin;
 use bevy::{prelude::*, tasks::IoTaskPool};
 use crossbeam_channel::{Receiver, Sender};
@@ -7,7 +8,6 @@ pub use midir::{Ignore, MidiInputPort};
 use std::error::Error;
 use std::fmt::Display;
 use std::future::Future;
-use MidiInputError::{ConnectionError, PortRefreshError};
 
 pub struct MidiInputPlugin;
 
@@ -151,7 +151,7 @@ fn reply(
             }
             Reply::Error(e) => {
                 warn!("{}", e);
-                err.send(e);
+                err.write(e);
             }
             Reply::Connected => {
                 conn.connected = true;
@@ -160,7 +160,7 @@ fn reply(
                 conn.connected = false;
             }
             Reply::Midi(m) => {
-                midi.send(m);
+                midi.write(m);
             }
         }
     }

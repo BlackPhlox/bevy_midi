@@ -88,23 +88,27 @@ pub struct OutputPorts;
 #[derive(Component)]
 pub struct ConnectStatus;
 
-fn show_ports(output: Res<MidiOutput>, mut instructions: Query<&mut TextSpan, With<OutputPorts>>) {
+fn show_ports(
+    output: Res<MidiOutput>,
+    mut instructions: Query<&mut TextSpan, With<OutputPorts>>,
+) -> Result {
     if output.is_changed() {
-        let text = &mut instructions.single_mut();
+        let text = &mut instructions.single_mut()?;
         text.0 = "Available output ports:\n\n".to_string();
         for (i, (name, _)) in output.ports().iter().enumerate() {
             text.0
                 .push_str(format!("Port {:?}: {:?}\n", i, name).as_str());
         }
     }
+    Ok(())
 }
 
 fn show_connection(
     connection: Res<MidiOutputConnection>,
     mut instructions: Query<(&mut TextSpan, &mut TextColor), With<ConnectStatus>>,
-) {
+) -> Result {
     if connection.is_changed() {
-        let (text, color) = &mut instructions.single_mut();
+        let (text, color) = &mut instructions.single_mut()?;
         if connection.is_connected() {
             text.0 = "Connected".to_string();
             color.0 = GREEN.into();
@@ -113,6 +117,7 @@ fn show_connection(
             color.0 = RED.into();
         }
     }
+    Ok(())
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {

@@ -57,6 +57,7 @@ See examples
 |0.13|0.8.X|
 |0.14|0.9.X|
 |0.15|0.10.X|
+|0.16|0.11.X|
 
 # Licensing
 The project is under dual license MIT and Apache 2.0, so joink to your hearts content, just remember the license agreements.
