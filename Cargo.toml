@@ -44,7 +44,7 @@ features = [
     "bevy_asset",
     "bevy_core_pipeline",
     "bevy_gltf",
-    "bevy_mesh_picking_backend",
+    "mesh_picking",
     "bevy_picking",
     "bevy_render",
     "bevy_scene",
