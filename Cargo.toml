@@ -21,8 +21,16 @@ name = "bevy_midi"
 midir = "0.10"
 crossbeam-channel = "0.5.8"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["MidiAccess", "MidiPort", "MidiInput", "MidiOutput", "Navigator", "Window"] }
+getrandom = { version = "0.3", features = ["wasm_js"] }
+send_wrapper = "0.6"
+
 [dev-dependencies]
-bevy_egui = { version = "0.37", features = ["immutable_ctx"] }
+bevy_egui = { version = "0.37", default-features = false, features = ["immutable_ctx", "render"] }
 strum = { version = "0.26", features = ["derive"] }
 
 [dependencies.bevy]
@@ -36,6 +44,7 @@ features = [
     "bevy_asset",
     "bevy_core_pipeline",
     "bevy_gltf",
+    "bevy_mesh_picking_backend",
     "bevy_picking",
     "bevy_render",
     "bevy_scene",
@@ -44,8 +53,14 @@ features = [
     "bevy_winit",
     "hdr",
     "ktx2",
-    "tonemapping_luts"
+    "tonemapping_luts",
+    "zstd_rust"
 ]
+default-features = false
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies.bevy]
+version = "0.17"
+features = ["webgl2"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
