@@ -30,21 +30,21 @@ getrandom = { version = "0.3", features = ["wasm_js"] }
 send_wrapper = "0.6"
 
 [dev-dependencies]
-bevy_egui = { version = "0.37", default-features = false, features = ["immutable_ctx", "render"] }
+bevy_egui = { version = "0.39", features = ["immutable_ctx"] }
 strum = { version = "0.26", features = ["derive"] }
 
 [dependencies.bevy]
-version = "0.17"
+version = "0.18"
 default-features = false
 features = ["multi_threaded", "bevy_log"]
 
 [dev-dependencies.bevy]
-version = "0.17"
+version = "0.18"
 features = [
     "bevy_asset",
     "bevy_core_pipeline",
     "bevy_gltf",
-    "bevy_mesh_picking_backend",
+    "mesh_picking",
     "bevy_picking",
     "bevy_render",
     "bevy_scene",
@@ -64,6 +64,6 @@ features = ["webgl2"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.17"
+version = "0.18"
 features = ["x11", "wayland"]
 default-features = false
