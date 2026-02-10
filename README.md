@@ -36,8 +36,6 @@ https://user-images.githubusercontent.com/25123512/122971334-3bae6100-d38f-11eb-
 
 Notice: Sustain is not handled by the example
 
-Browser support: Still work in progress.
-
 # Setup
 
 See examples
