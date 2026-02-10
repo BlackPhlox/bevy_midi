@@ -1,8 +1,9 @@
 pub mod input;
 pub mod output;
+pub mod safe_wrappers;
 
 pub mod prelude {
-    pub use crate::{input::*, output::*, *};
+    pub use crate::{input::*, output::*, safe_wrappers::*, *};
 }
 
 pub const KEY_RANGE: [&str; 12] = [
