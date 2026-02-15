@@ -34,12 +34,15 @@ bevy_egui = { version = "0.39", features = ["immutable_ctx"] }
 strum = { version = "0.26", features = ["derive"] }
 
 [dependencies.bevy]
-version = "0.18"
+git = "https://github.com/bevyengine/bevy"
+branch = "main"
 default-features = false
 features = ["multi_threaded", "bevy_log"]
 
+
 [dev-dependencies.bevy]
-version = "0.18"
+git = "https://github.com/bevyengine/bevy"
+branch = "main"
 features = [
     "bevy_asset",
     "bevy_core_pipeline",
@@ -59,11 +62,13 @@ features = [
 default-features = false
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.bevy]
-version = "0.17"
+git = "https://github.com/bevyengine/bevy"
+branch = "main"
 features = ["webgl2"]
 default-features = false
 
 [target.'cfg(target_os = "linux")'.dev-dependencies.bevy]
-version = "0.18"
+git = "https://github.com/bevyengine/bevy"
+branch = "main"
 features = ["x11", "wayland"]
 default-features = false
