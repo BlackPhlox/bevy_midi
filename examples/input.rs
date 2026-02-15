@@ -137,8 +137,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             Text::default(),
             TextFont {
-                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                font_size: 30.0,
+                font: FontSource::from(asset_server.load("fonts/FiraSans-Bold.ttf")),
+                font_size: bevy::prelude::FontSize::Px(30.0),
                 ..default()
             },
         ))
@@ -151,8 +151,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                        Escape - Disconnect from current port \n",
                 ),
                 TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 30.0,
+                    font: FontSource::from(asset_server.load("fonts/FiraSans-Bold.ttf")),
+                    font_size: bevy::prelude::FontSize::Px(30.0),
                     ..default()
                 },
                 TextColor(Color::WHITE),
@@ -160,8 +160,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             commands.spawn((
                 TextSpan::default(),
                 TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 30.0,
+                    font: FontSource::from(asset_server.load("fonts/FiraSans-Bold.ttf")),
+                    font_size: bevy::prelude::FontSize::Px(30.0),
                     ..default()
                 },
                 TextColor(Color::WHITE),
@@ -170,8 +170,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             commands.spawn((
                 TextSpan::new("Disconnected\n"),
                 TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 30.0,
+                    font: FontSource::from(asset_server.load("fonts/FiraSans-Bold.ttf")),
+                    font_size: bevy::prelude::FontSize::Px(30.0),
                     ..default()
                 },
                 TextColor(Color::linear_rgb(1.0, 0., 0.)),
@@ -181,8 +181,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             commands.spawn((
                 TextSpan::new("Last Message:"),
                 TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 30.0,
+                    font: FontSource::from(asset_server.load("fonts/FiraSans-Bold.ttf")),
+                    font_size: bevy::prelude::FontSize::Px(30.0),
                     ..default()
                 },
                 TextColor(Color::BLACK),
